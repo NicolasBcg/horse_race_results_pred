@@ -13,21 +13,32 @@ import matplotlib.pyplot as plt
 # 4 : ["SIMPLE_GAGNANT"]
 # 5 : ["E_SIMPLE_PLACE"]
 # 6 : ["RES"]
+# 7 : ["SIMPLE_GAGNANT_NP"]
+# 8 : ["E_SIMPLE_PLACE_NP"]
 def get_proba_cote(horse,bet_type):
     p=horse[3]
     r=horse[6]
     c_classic=round(horse[4],2)
     c_e=round(horse[5],2)
     c_max = max(c_classic,c_e)
+
+    c_np_classic=round(horse[7],2)
+    c_np_e=round(horse[8],2)
+    c_np_max = max(c_np_classic,c_np_e)
     if bet_type=="max":
         c = c_max
+        c_np= c_np_max
     elif bet_type=="classic":
         c = c_classic
+        c_np= c_np_classic
+        c_np= c_np_e
+        c_np= -1 
     elif bet_type=="e_paris":
         c = c_e
     else :
         c = -1 
-    return p,c,r
+        
+    return p,c,r,c_np
 
 def bet_on_trio(courses,seuilProba=0.13, bet_type="max"):
     paris=[0]
@@ -36,16 +47,31 @@ def bet_on_trio(courses,seuilProba=0.13, bet_type="max"):
     for course in courses:
         nbParticipants=len(course)
         month=(int(course[0][1][2:4]))-1
-        p3,c3,r3=get_proba_cote(course[2],bet_type)
-        r1=course[0][6]
-        r2=course[1][6]
+        p3,c3,r3,c_np3=get_proba_cote(course[2],bet_type)
+        p2,c2,r2,c_np2=get_proba_cote(course[1],bet_type)
+        p1,c1,r1,c_np1=get_proba_cote(course[0],bet_type)
         p4=course[3][3]
         if p3-p4>seuilProba and nbParticipants > 7:# and p1-p4 < 0.04 :
             if c3!=-1 :
-                paris.append(paris[-1] + c3 - 1 if 0 not in [r1,r2,r3]  else paris[-1] - 1)
-                paris_by_months[month].append(paris_by_months[month][-1] + c3-1 if 0 not in [r1,r2,r3]  else paris_by_months[month][-1] - 1)
+                if r1 in [1,2,3] and r2 in [1,2,3] and r3 in [1,2,3]:
+                    paris.append(paris[-1] + c1 - 1)
+                    paris_by_months[month].append(paris_by_months[month][-1] + c1 - 1)
+                elif r1 in [1,2,3] and r2 == -10 and r3 in [1,2,3]:
+                    paris.append(paris[-1] + c_np1 - 1)
+                    paris_by_months[month].append(paris_by_months[month][-1]  + c_np1 - 1)
+                elif r2 in [1,2,3] and r1 == -10 and r3 in [1,2,3]:
+                    paris.append(paris[-1] + c_np2 - 1)
+                    paris_by_months[month].append(paris_by_months[month][-1]  + c_np2 - 1)
+                elif r1 in [1,2,3] and r3 == -10 and r2 in [1,2,3]:
+                    paris.append(paris[-1] + c_np2 - 1)
+                    paris_by_months[month].append(paris_by_months[month][-1]  + c_np1 - 1)
+                else :
+                    paris.append(paris[-1] - 1)
+                    paris_by_months[month].append(paris_by_months[month][-1] - 1)
             else : 
                 u+=1
+        else :
+            u+=1
     print("u="+str(u))     
     return paris,paris_by_months
 
@@ -56,16 +82,26 @@ def bet_on_couple(courses,seuilProba=0.13, bet_type="max"):
     for course in courses:
         nbParticipants=len(course)
         month=(int(course[0][1][2:4]))-1
-        p2,c2,r2=get_proba_cote(course[2],bet_type)
-        r1=course[0][6]
-        p3=course[3][3]
+        p2,c2,r2,c_np2=get_proba_cote(course[1],bet_type)
+        p1,c1,r1,c_np1=get_proba_cote(course[0],bet_type)
+        p3=course[2][3]
         if p2-p3>seuilProba :# and p1-p4 < 0.04 :
             if c2!=-1 :
-                paris.append(paris[-1] + c2 - 1 if r1 in [1,2] and r2 in [1,2] else paris[-1] - 1)
-                paris_by_months[month].append(paris_by_months[month][-1] + c2-1 if r1 in [1,2] and r2 in [1,2]  else paris_by_months[month][-1] - 1)
-                # if r1 in [1,2] and r2 in [1,2]:
-                #     print([r1,r2])
-                #     print("course : "+course[0][1]+" gagnants : "+str(course[0][2])+"-"+str(course[1][2])+" cote : "+str(c2))
+                
+                if r1 in [1,2] and r2 in [1,2]:
+                    paris.append(paris[-1] + c1 - 1)
+                    paris_by_months[month].append(paris_by_months[month][-1] + c1 - 1)
+                elif r1 in [1,2] and r2 == -10 :
+                    paris.append(paris[-1] + c_np1 - 1)
+                    paris_by_months[month].append(paris_by_months[month][-1]  + c_np1 - 1)
+                elif r2 in [1,2] and r1 == -10 :
+                    paris.append(paris[-1] + c_np2 - 1)
+                    paris_by_months[month].append(paris_by_months[month][-1]  + c_np2 - 1)
+                else :
+                    paris.append(paris[-1] - 1)
+                    paris_by_months[month].append(paris_by_months[month][-1] - 1)
+                    # print([r1,r2])
+                    # print("course : "+course[0][1]+" gagnants : "+str(course[0][2])+"-"+str(course[1][2])+" cote : "+str(c2))
             else : 
                 u+=1
     print("u="+str(u)) 
@@ -74,23 +110,25 @@ def bet_on_couple(courses,seuilProba=0.13, bet_type="max"):
 def bet_on_winner(courses,seuilProba=0.13, bet_type="max"):
     paris=[0]
     u=0
-    total=0
+    non_partant=0
     paris_by_months=[[0] for _ in range(12)]
     for course in courses:
-        total+=1
+
         #print(course)
         #nbParticipants=len(course)
         month=(int(course[0][1][2:4]))-1
         p2=course[1][3]
-        p1,c1,r1=get_proba_cote(course[0],bet_type)
-        if c1==-1:
+        p1,c1,r1,c_np1=get_proba_cote(course[0],bet_type)
+        if r1==-10:
+            non_partant+=1
+        elif c1==-1:
             u+=1
         elif p1-p2>seuilProba :#p1-p2>seuilProba-(nbParticipants/1000)+0.01 and p1*c1>seuilEV and nbParticipants>=12: # p1-p2>seuilProba-(nbParticipants/800)+0.0205 and p1*c1>seuilEV:
             paris.append(paris[-1] + c1 - 1 if r1 == 1  else paris[-1] - 1)
             paris_by_months[month].append(paris_by_months[month][-1] + c1 - 1 if r1 == 1 else paris_by_months[month][-1] - 1)
         # else :
         #     print(p1-p2)
-    print("total ="+str(total))      
+    print("non_partant ="+str(non_partant))      
     print("u="+str(u))
     return paris,paris_by_months
 
@@ -98,14 +136,17 @@ def bet_on_place(courses,seuilProba=0.13, bet_type="max"):
     paris=[0]
     paris_by_months=[[0] for _ in range(12)]
     u=0
+    non_partant=0
     for course in courses:
         nbParticipants=len(course)
         month=(int(course[0][1][2:4]))-1
-        p2,c2,r2=get_proba_cote(course[1],bet_type)
-        p1,c1,r1=get_proba_cote(course[0],bet_type)
+        p2,c2,r2,c_np2=get_proba_cote(course[1],bet_type)
+        p1,c1,r1,c_np1=get_proba_cote(course[0],bet_type)
         p4=course[3][3]
         if p1-p4>seuilProba and nbParticipants > 7:# and p1-p4 < 0.04 :
-            if c1!=-1 :
+            if r1==-10:
+                non_partant+=1
+            elif c1!=-1 :
                 paris.append(paris[-1] + c1 - 1 if r1 !=0  else paris[-1] - 1)
                 paris_by_months[month].append(paris_by_months[month][-1] + c1-1 if r1 != 0 else paris_by_months[month][-1] - 1)
             else : 
@@ -115,7 +156,9 @@ def bet_on_place(courses,seuilProba=0.13, bet_type="max"):
                 # paris_by_months[month].append(paris_by_months[month][-1] + 0.05 if y_test.iloc[course[0][2]] != 0 else paris_by_months[month][-1] - 1)
 
         if p2-p4>seuilProba*0.95 and nbParticipants > 7 :
-            if c2!=-1 :
+            if r2==-10:
+                non_partant+=1
+            elif c2!=-1 :
                 paris.append(paris[-1] + c2 - 1 if r2 !=0  else paris[-1] - 1)
                 paris_by_months[month].append(paris_by_months[month][-1] + c2-1 if r2 != 0 else paris_by_months[month][-1] - 1)
             else : 
@@ -123,7 +166,7 @@ def bet_on_place(courses,seuilProba=0.13, bet_type="max"):
                 # c2=(c2-1)/5 + 1
                 # paris.append(paris[-1] + 0.05 if y_test.iloc[course[1][2]] !=0  else paris[-1] - 1)# + c1 - 1 if y_test.iloc[course[0][2]] !=0  else paris[-1] - 1)
                 # paris_by_months[month].append(paris_by_months[month][-1] + 0.05 if y_test.iloc[course[1][2]] != 0 else paris_by_months[month][-1] - 1)
-
+    print("non_partant ="+str(non_partant))      
     print("u="+str(u))
         
     return paris,paris_by_months
@@ -133,7 +176,7 @@ def sortHorses(horses):
     return sorted(horses, key=lambda x: x[3], reverse=True)
 
 
-def splitCoursesv2(probs,ids_course,numeros_PMU,classique,e_paris,results):
+def splitCoursesv2(probs,ids_course,numeros_PMU,classique,e_paris,results,classique_np,e_paris_np):
     splited=[]
     lastId=0
     lastCourse=ids_course[0]
@@ -142,13 +185,13 @@ def splitCoursesv2(probs,ids_course,numeros_PMU,classique,e_paris,results):
         if course != lastCourse:
             horses=[]
             for k in range(lastId,j):
-                horses.append([k,ids_course.iloc[k],numeros_PMU.iloc[k],probs.iloc[k],classique.iloc[k],e_paris.iloc[k],results.iloc[k]]) #(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_GAGNANT"],df["E_SIMPLE_PLACE"])
+                horses.append([k,ids_course.iloc[k],numeros_PMU.iloc[k],probs.iloc[k],classique.iloc[k],e_paris.iloc[k],results.iloc[k],classique_np.iloc[k],e_paris_np.iloc[k]]) #(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_GAGNANT"],df["E_SIMPLE_PLACE"])
             splited.append(sortHorses(horses))
             lastId=j
             lastCourse=ids_course.iloc[j]
     horses=[]
     for k in range(lastId,len(ids_course)):
-        horses.append([k,ids_course.iloc[k],numeros_PMU.iloc[k],probs.iloc[k],classique.iloc[k],e_paris.iloc[k],results.iloc[k]])
+        horses.append([k,ids_course.iloc[k],numeros_PMU.iloc[k],probs.iloc[k],classique.iloc[k],e_paris.iloc[k],results.iloc[k],classique_np.iloc[k],e_paris_np.iloc[k]])
     splited.append(sortHorses(horses))
     return splited
 
@@ -206,8 +249,8 @@ def test_paris(courses,resultats,types_paris=[]):
     p = [bet_on_winner,bet_on_place,bet_on_couple,bet_on_trio]
     pname = ["bet_on_winner","bet_on_place","bet_on_couple","bet_on_trio"]
     allParis=[]
-    for seuilProb in  [0.0]:# [0.14,0.16,0.18]:#  [0.05,0.1]:#[0.15,0.16,0.18,0.2]: # [0.3,0.35,0.4,0.5]:# [0.15,0.2,0.25]: #   [0.15,0.2,0.25,0.3]: #
-        for bet_type in ["max"]: #["max"]:#  ["max","classic","e_paris"]: # ["max"]:# ["max","classic","e_paris"]: #
+    for seuilProb in  [0]:# [0.14,0.16,0.18]:#  [0.05,0.1]:#[0.15,0.16,0.18,0.2]: # [0.3,0.35,0.4,0.5]:# [0.15,0.2,0.25]: #   [0.15,0.2,0.25,0.3]: #
+        for bet_type in ["max"]: # ["max"]: #["max"]:#  ["max","classic","e_paris"]: # 
             for pr in types_paris:
                 paris = calc_res(p[pr],pname[pr],courses,seuilProba=seuilProb,bet_type=bet_type)
                 allParis.append(paris)
@@ -215,19 +258,18 @@ def test_paris(courses,resultats,types_paris=[]):
 # directory_encode="2021_2022_attele_reduced"
 # with open(PATH+directory_encode+'/resultats_borda_trio_norm_20f_same_year_10_09_200.pkl', "rb") as f:
 
-df=pd.read_csv(PATH + directory_encode + '/resultats_borda_norm.csv')
-# courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_GAGNANT"],df["E_SIMPLE_GAGNANT"],df["RES"])
+df=pd.read_csv(PATH + directory_encode + '/resultats_xgboost_borda_norm.csv')
+# courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_GAGNANT"],df["E_SIMPLE_GAGNANT"],df["RES"],df["SIMPLE_GAGNANT_NP"],df["E_SIMPLE_GAGNANT_NP"])
 # test_paris(courses,df["RES"],[0])
 
-# courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_PLACE"],df["E_SIMPLE_PLACE"],df["RES"])
+# courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_PLACE"],df["E_SIMPLE_PLACE"],df["RES"],df["SIMPLE_GAGNANT_NP"],df["E_SIMPLE_GAGNANT_NP"])
 # test_paris(courses,df["RES"],[1])
 
-
-courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["COUPLE_GAGNANT"],df["E_COUPLE_GAGNANT"],df["RES"])
+courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["COUPLE_GAGNANT"],df["E_COUPLE_GAGNANT"],df["RES"],df["COUPLE_GAGNANT_NP"],df["E_COUPLE_GAGNANT_NP"])
 test_paris(courses,df["RES"],[2])
 
-# courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["TRIO"],df["E_TRIO"],df["RES"])
-# test_paris(courses,df["RES"],[3])
+courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["TRIO"],df["E_TRIO"],df["RES"],df["TRIO_NP"],df["TRIO_NP"])
+test_paris(courses,df["RES"],[3])
 # 0 : ["PROBAS"]
 # 1 : ["IDS_COURSES"] 
 # 2 : ["NUM_PMU"]

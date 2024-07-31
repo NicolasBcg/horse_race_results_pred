@@ -8,7 +8,7 @@ import random
 
 random.seed(42)
 NB_FANTOMES=20
-FILE_FANTOME="2022_reduced"
+FILE_FANTOME="fantomes_2nd_sem_2022"
 FEATURES_REUNION = [
     ["dateReunion"],
     ["nature","UNKNOWN"],
@@ -148,7 +148,7 @@ FEATURES_MUSIQUE=[
     ["r9"],
     ["d9"],
     ["r10"],
-    ["d10"],
+    # ["d10"],
 ]
 FEATURES_CHEVAL_PLAT_TROT_ATTELE=[
     ["numPmu"],
@@ -188,7 +188,44 @@ FEATURES_CHEVAL_PLAT_TROT_ATTELE=[
     # ["eleveur","UNKNOWN"],
     # ["driver","UNKNOWN"]
 ]
-
+FEATURES_CHEVAL_TROT_ATTELE=[
+    ["numPmu"],
+    ["age",None],
+    ["sexe","UNKNOWN"],
+    ["race","UNKNOWN"],
+    ["oeilleres","UNKNOWN"],
+    
+    ["deferre","UNKNOWN"],
+    ["driverChange",None],
+    ["indicateurInedit","UNKNOWN"],
+    ["nombreCourses",-1],
+    ["nombreVictoires",-1],
+    ["nombrePlaces",-1],
+    ["nombrePlacesSecond",-1],
+    ["nombrePlacesTroisieme",-1],
+    [["gainsParticipant","gainsCarriere"],-1],
+    [["gainsParticipant","gainsVictoires"],-1],
+    [["gainsParticipant","gainsPlace"],-1],
+    [["gainsParticipant","gainsAnneeEnCours"],-1],
+    [["gainsParticipant","gainsAnneePrecedente"],-1],
+    ["jumentPleine",None],
+    ["engagement"],
+    # ["supplement",-1],
+    ["handicapDistance",-1],
+    # ["handicapPoids",-1],
+    # ["poidsConditionMonteChange"],
+    ["avisEntraineur","UNKNOWN"],
+    ["driver_last_course",-100],
+    ["driver_last_out",-100],
+    ["horse_last_out",-100],
+    ["horse_last_elo",1400],
+    ["jockey_last_elo",1400],
+    ["horse_last_elo_v2",1400],
+    ["jockey_last_elo_v2",1400],
+    # ["proprietaire","UNKNOWN"],
+    # ["eleveur","UNKNOWN"],
+    # ["driver","UNKNOWN"]
+]
 
 with open(PATH_TO_DATASETS+"jockeys.json", 'r') as f:
     resultats_jockeys = json.load(f) 
@@ -244,7 +281,7 @@ def get_features_musique(musique):
         else:
             liste_resultat.append('U')
 
-    return liste_resultat[:20]  # Limiter la liste à 20 éléments
+    return liste_resultat[:19]  # Limiter la liste à 20 éléments
 
 def get_Features_jockey(jockey,date):
     res=[0 for _ in range(len(FEATURES_JOCKEY))]
@@ -333,7 +370,7 @@ def extract_cotes(raport):
 
 def create_feature_list(training=True):
     features=[]
-    features_lists=[FEATURES_CHEVAL_PLAT_TROT_ATTELE,FEATURES_JOCKEY,FEATURES_ELEVEUR,FEATURES_PROPRIETAIRE,FEATURES_MUSIQUE,FEATURES_REUNION,FEATURES_COURSE,FEATURES_CHEVAL_PLAT_TROT_ATTELE,FEATURES_JOCKEY,FEATURES_ELEVEUR,FEATURES_PROPRIETAIRE,FEATURES_MUSIQUE]
+    features_lists=[FEATURES_CHEVAL_TROT_ATTELE,FEATURES_JOCKEY,FEATURES_ELEVEUR,FEATURES_PROPRIETAIRE,FEATURES_MUSIQUE,FEATURES_REUNION,FEATURES_COURSE,FEATURES_CHEVAL_TROT_ATTELE,FEATURES_JOCKEY,FEATURES_ELEVEUR,FEATURES_PROPRIETAIRE,FEATURES_MUSIQUE]
     for features_list in features_lists:
         for feature in features_list:
             if type(feature[0])==str:
@@ -374,9 +411,15 @@ def possible_bets(paris):
             pass
     return False
 
+def get_incidents(course): 
+    if "incidents" in course.keys():
+        for incident in course["incidents"]:
+            if incident["type"] == "NON_PARTANT":
+                # print(incident["numeroParticipants"])
+                return incident["numeroParticipants"]
+    return []
 
-
-def recup_infos(file_name):
+def recup_infos(file_name,training=True):
     data_by_race = []
     date=file_name.split('.')[0]
     with open(PATH_TO_CACHE+"programmes\\"+file_name, 'r') as file:
@@ -399,9 +442,14 @@ def recup_infos(file_name):
                         participants = json.loads(file.read())
                     idCourse=date+'-'+str(num_reunion)+'-'+str(course["numOrdre"])
                     chevaux=[]
-                    
-                    for participant in participants["participants"]:  
+
+                    if training == False : 
+                        non_partants = get_incidents(course)
+                    else : 
+                        non_partants = []
                         
+                    for participant in participants["participants"]:  
+
                         if "driver" in participant.keys():
                             jockey=participant["driver"]
                         else:
@@ -418,12 +466,13 @@ def recup_infos(file_name):
                             musique=participant["musique"]
                         else:
                             musique=""   
-                        chevaux.append(extract_features(participant,FEATURES_CHEVAL_PLAT_TROT_ATTELE)+get_Features_jockey(jockey,date)+get_Features_eleveur(eleveur,date)+get_FEATURES_PROPRIETAIRE(proprietaire,date)+get_features_musique(musique))
-                    data_by_race.append(infos_reunion+info_course+[chevaux]+[ordreArrivee]+[idCourse]+[time_start]+[specialite])
+                        chevaux.append(extract_features(participant,FEATURES_CHEVAL_TROT_ATTELE)+get_Features_jockey(jockey,date)+get_Features_eleveur(eleveur,date)+get_FEATURES_PROPRIETAIRE(proprietaire,date)+get_features_musique(musique))
+                    data_by_race.append(infos_reunion+info_course+[chevaux]+[ordreArrivee]+[idCourse]+[time_start]+[non_partants]+[specialite])
     return data_by_race
 
 def generate_rows_from_race(race,training=True,select_specialite="all"):
     specialite=race.pop()
+    non_partants = race.pop()
     time_course= race.pop()
     rows=[]
     if (select_specialite=="all" and (specialite == "TROT_ATTELE" or specialite == "PLAT")) or (specialite == "TROT_ATTELE" and select_specialite=="attele") or (specialite == "PLAT" and select_specialite=="plat") :
@@ -445,15 +494,17 @@ def generate_rows_from_race(race,training=True,select_specialite="all"):
             nb_participants=len(chevaux)
             while len(finishers_bis)<NB_FANTOMES:
                 finishers_bis.append(random.choice(fantomes[specialite]))
-            # print(nb_participants)
-            try:
-                with open(PATH_TO_CACHE+'rapports_prealable/'+idCourse+'.json', 'r') as f:
-                    raport = json.load(f)
-                    course = [resultats]+[idCourse]+[nb_participants]+[extract_cotes(raport)]+[time_course]
-            except:
-                #print(PATH_TO_CACHE+'rapports_prealable/'+idCourse+'.json introuvable')
-                course = [resultats]+[idCourse]+[nb_participants]+[[-1 for _ in range(nb_participants)]]+[time_course]
-                #return [],'fail',[]
+
+            if not training :
+                try:
+                    with open(PATH_TO_CACHE+'rapports_prealable/'+idCourse+'.json', 'r') as f:
+                        raport = json.load(f)
+                        course = [resultats]+[idCourse]+[nb_participants]+[extract_cotes(raport)]+[time_course]+[non_partants]
+                except:
+                    course = [resultats]+[idCourse]+[nb_participants]+[[-1 for _ in range(nb_participants)]]+[time_course]+[non_partants]
+            else : 
+                course = []
+
         for cheval1 in finishers:
             for cheval2 in finishers_bis:
                 if training and ordre[str(cheval1[0])] != ordre[str(cheval2[0])]:
@@ -495,7 +546,7 @@ def generate_dataset(date1,date2,dname,training=True,select_specialite="all"):
         if dfile>=date1 and dfile<date2:
             file_treated+=1
             print(f)
-            races = recup_infos(f) #recup races info for each file
+            races = recup_infos(f,training) #recup races info for each file
             for race in races: 
                 rows,specialite,course=generate_rows_from_race(race,training=training,select_specialite=select_specialite)
                 if specialite == "TROT_ATTELE" and (select_specialite=="all" or select_specialite=="attele"):
@@ -527,13 +578,9 @@ def generate_dataset(date1,date2,dname,training=True,select_specialite="all"):
         dfplat.to_csv(PATH_TO_CACHE+"datasets\\"+dname+"_plat.csv", mode='a', index=False, header=False)
     if not training:
         if select_specialite=="all" or select_specialite=="attele":
-            pd.DataFrame(courses_trot, columns =["resultats","idCourse","nbParticipants","cotes","heure_depart"]).to_csv(PATH_TO_CACHE+"datasets\\"+dname+"_attele_res.csv", mode='w', index=False, header=True)
+            pd.DataFrame(courses_trot, columns =["resultats","idCourse","nbParticipants","cotes","heure_depart","non_partants"]).to_csv(PATH_TO_CACHE+"datasets\\"+dname+"_attele_res.csv", mode='w', index=False, header=True)
         if select_specialite=="all" or select_specialite=="plat":
-            pd.DataFrame(courses_plat, columns =["resultats","idCourse","nbParticipants","cotes","heure_depart"]).to_csv(PATH_TO_CACHE+"datasets\\"+dname+"_plat_res.csv", mode='w', index=False, header=True)
-
-
-
-            
+            pd.DataFrame(courses_plat, columns =["resultats","idCourse","nbParticipants","cotes","heure_depart","non_partants"]).to_csv(PATH_TO_CACHE+"datasets\\"+dname+"_plat_res.csv", mode='w', index=False, header=True)
 
 def generate_fantomes(date1,date2,dname,select_specialite="all"):
     #init files and df
@@ -552,8 +599,16 @@ def generate_fantomes(date1,date2,dname,select_specialite="all"):
             print(f)
             races = recup_infos(f) #recup races info for each file
             for race in races: 
-                chevaux=race[-5]
+                arrive =race[-6]
+                resultats= race[-5]
                 specialite=race.pop()
+                chevaux = []
+                for cheval in arrive :
+                    try : 
+                        if cheval in arrive[6:10] :
+                            chevaux.append(cheval)
+                    except :
+                        pass
                 if specialite == "TROT_ATTELE" and (select_specialite=="all" or select_specialite=="attele"):
                     dataset_attele=dataset_attele+chevaux
                 if specialite == "PLAT" and (select_specialite=="all" or select_specialite=="plat"):
@@ -561,6 +616,6 @@ def generate_fantomes(date1,date2,dname,select_specialite="all"):
     fantomes={"PLAT" : dataset_plat,"TROT_ATTELE" : dataset_attele}
     with open(PATH_TO_DATASETS+"FANTOMES_"+dname+".json", "w") as json_file:
         json.dump(fantomes, json_file)
-# generate_fantomes("1/1/2022","1/1/2023","2022_reduced",select_specialite="all")
+# generate_fantomes("1/7/2022","1/1/2023","fantomes_2nd_sem_2022",select_specialite="all")
 
     

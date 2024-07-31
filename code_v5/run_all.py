@@ -16,7 +16,7 @@ from encode import *
 
 # generate_dataset("1/6/2023","1/1/2024",DATASET,training=True,select_specialite="attele")
 
-# generate_dataset("1/9/2023","1/1/2024",DATASET_TEST,training=False,select_specialite="attele")
+generate_dataset("1/9/2023","1/1/2024",DATASET_TEST,training=False,select_specialite="attele")
 
 encode_primary(directory_encode,"1/6/2023","1/9/2023",DATASET+"_attele.csv")
 
