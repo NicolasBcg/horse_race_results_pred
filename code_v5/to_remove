@@ -1,0 +1,5 @@
+remove :  avis entrainneur ? date_reunion_post_encoding
+compute : parcour
+
+
+for plat: remove handicapDistance
