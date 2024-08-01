@@ -1,5 +1,5 @@
 import numpy as np
-import lightgbm as lgb
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, log_loss
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -10,6 +10,8 @@ import sklearn.metrics as metrics
 
 print("extracting data")
 x_train = pd.read_csv(PATH+directory_encode+'/X_train.csv')
+# Handle missing values (if any)
+x_train = pd.DataFrame(x_train).fillna(pd.DataFrame(x_train).mean())
 y_train = pd.read_csv(PATH+directory_encode+'/Y_train.csv').to_numpy().astype(np.float32)
 y_train = y_train.reshape(-1)  # Reshape to a 1D array
 
@@ -17,46 +19,36 @@ print("extracting data done")
 print(x_train.shape)
 print(y_train.shape)
 print("training")
-# Configure LightGBM
-params = {
-    'objective': 'binary',
-    'metric': 'binary_logloss',
-    'learning_rate': 0.05,
-    'max_depth': -1,
-    'num_leaves': 256, #max 256
-    'subsample': 0.7,
-    'colsample_bytree': 0.7,
-    'seed': 42
-}
 
-# Convert data to LightGBM Dataset format
-dtrain = lgb.Dataset(x_train, label=y_train)
-print("dataset_created")
+# Initialize the Logistic Regression model
+model = LogisticRegression(max_iter=1000,solver='newton-cg', random_state=42)
+
 # Train the model
 start = time.time()
-model = lgb.train(params, dtrain, num_boost_round=3000)
+model.fit(x_train, y_train)
 print("training end "+str(time.time()-start))
 
 # Save the trained model
-joblib.dump(model, PATH + "lgbm_model_" + directory_encode + ".dat")
+joblib.dump(model, PATH + "logreg_model_" + directory_encode + ".dat")
 
 # Load the trained model
-# model = joblib.load(PATH + "lgbm_model_" + directory_encode + ".dat")
-
+# model = joblib.load(PATH + "logreg_model_" + directory_encode + ".dat")
 x_train=[]
 y_train=[]
 # Extract test data
 print("extracting test data ")
 x_test = pd.read_csv(PATH+directory_encode+'/X_test.csv')
+# Handle missing values (if any)
+x_test = pd.DataFrame(x_test).fillna(pd.DataFrame(x_test).mean())
 y_test = pd.read_csv(PATH+directory_encode+'/Y_test.csv').to_numpy().astype(np.float32)
 y_test = y_test.reshape(-1)  # Reshape to a 1D array
 print("predicting ")
 
 # Predict probabilities
-probs = model.predict(x_test)
+probs = model.predict_proba(x_test)[:, 1]
 
 # Predict classes
-y_pred = (probs > 0.5).astype(int)
+y_pred = model.predict(x_test)
 
 # Calculate accuracy
 accuracy = accuracy_score(y_test, y_pred)

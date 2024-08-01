@@ -3,9 +3,9 @@ PATH = "C:/Users/NicolasBocage/Documents/projet/test/"
 PATH_TO_CACHE = PATH+"cache/"
 PARTICIPANT_URL = PATH_TO_CACHE+"participants/"
 PATH_TO_DATASETS = PATH_TO_CACHE+"datasets/"
-directory_encode= "short_for_dev" # "short_for_dev" #"archive/tests_v3/2024_less_info" # "2023_less_info" # "v4_2023_attele" #2021_2022_attele_reduced
-DATASET="short_dev"#"reduced"
-DATASET_TEST= "short_dev_test" #"short_dev_test"#
+directory_encode= "short_for_dev" #"2020_2023" # "short_for_dev" 
+DATASET="2020_2024"#"reduced"
+DATASET_TEST= "short_dev_test"# "2024_test" #"short_dev_test"#
 
 def div_time(date,delay=0):
     nombre_de_mois_par_div=1

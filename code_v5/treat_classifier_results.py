@@ -13,8 +13,14 @@ import json
 
 nb_chevaux_fantomes = 20
 specialite = "_attele"
-model_choice = "xgboost"  # Options: "xgboost", "randomForest", "lightgbm"
+model_choice = "lightgbm"  # Options: "xgboost", "randomForest", "lightgbm","linregressor"
 model_extension = ''
+
+
+print("Loading DATAS")
+x_test = pd.read_csv(PATH + directory_encode + '/X_test_2.csv')
+
+
 print("Loading Model")
 
 CATEGORIES = ['SIMPLE_GAGNANT','E_SIMPLE_GAGNANT','SIMPLE_PLACE','E_SIMPLE_PLACE','COUPLE_GAGNANT','E_COUPLE_GAGNANT',"TRIO","E_TRIO"]
@@ -25,11 +31,13 @@ elif model_choice == "randomForest":
     model = joblib.load(PATH + "randomForest" + directory_encode + ".sav")
 elif model_choice == "lightgbm":
     model = joblib.load(PATH + "lgbm_model_" + directory_encode  + model_extension+ ".dat")
+elif model_choice == "linregressor":
+    model = joblib.load(PATH + "logreg_model_" + directory_encode  + model_extension+ ".dat")
+    x_test = pd.DataFrame(x_test).fillna(pd.DataFrame(x_test).mean())
 else:
     raise ValueError("Invalid model choice. Please select 'xgboost', 'randomForest', or 'lightgbm'.")
 
-print("Loading DATAS")
-x_test = pd.read_csv(PATH + directory_encode + '/X_test_2.csv')
+
 try : 
     numsPMU = x_test[["numPmu0", "numPmu01"]]
     x_test=x_test.drop(["numPmu0", "numPmu01"],axis=1)
@@ -37,15 +45,20 @@ except :
     numsPMU = x_test[["numPmu", "numPmu.1"]]
     numsPMU = numsPMU.rename(columns={"numPmu": "numPmu0", "numPmu.1": "numPmu01"})
 print("Applying model")
-resultats = pd.read_csv(PATH_TO_CACHE + "datasets\\" + DATASET_TEST + specialite + "_res.csv")
+resultats = pd.read_csv(PATH_TO_DATASETS + DATASET_TEST + specialite + "_res.csv")
 
 def predict(races):
     if model_choice == "xgboost":
         dtest = xgb.DMatrix(races)
         return model.predict(dtest)
+    
     elif model_choice == "lightgbm":
         #dtest = lgb.Dataset(races)
         return model.predict(races)
+    
+    elif model_choice == "linregressor":
+        
+        return model.predict_proba(races)[:, 1]
     else:
         return model.predict_proba(races)[:, 1]
 

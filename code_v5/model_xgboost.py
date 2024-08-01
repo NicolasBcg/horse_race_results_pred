@@ -1,9 +1,9 @@
 import numpy as np
-import lightgbm as lgb
+import xgboost as xgb
 from sklearn.metrics import accuracy_score, log_loss
 import matplotlib.pyplot as plt
 import pandas as pd
-import time
+import time 
 import joblib
 from path import *
 import sklearn.metrics as metrics
@@ -17,34 +17,31 @@ print("extracting data done")
 print(x_train.shape)
 print(y_train.shape)
 print("training")
-# Configure LightGBM
+# Configure XGBoost
 params = {
-    'objective': 'binary',
-    'metric': 'binary_logloss',
-    'learning_rate': 0.05,
-    'max_depth': -1,
-    'num_leaves': 256, #max 256
-    'subsample': 0.7,
-    'colsample_bytree': 0.7,
-    'seed': 42
+    'objective': 'binary:logistic',   # Binary classification
+    'eval_metric': 'logloss',          # Use log loss as evaluation metric
+    'eta': 0.1,                        # Learning rate
+    'max_depth': 8,                    # Maximum depth of a tree
+    'subsample': 0.9,                  # Subsample ratio of the training instances
+    'colsample_bytree': 0.9,           # Subsample ratio of columns when constructing each tree
+    'seed': 42                         # Random seed for reproducibility
 }
 
-# Convert data to LightGBM Dataset format
-dtrain = lgb.Dataset(x_train, label=y_train)
-print("dataset_created")
+# Convert data to DMatrix format for XGBoost
+dtrain = xgb.DMatrix(x_train, label=y_train)
+print("matrix_created")
 # Train the model
 start = time.time()
-model = lgb.train(params, dtrain, num_boost_round=3000)
+model = xgb.train(params, dtrain, num_boost_round=200)  # Train for 100 rounds
 print("training end "+str(time.time()-start))
 
 # Save the trained model
-joblib.dump(model, PATH + "lgbm_model_" + directory_encode + ".dat")
+joblib.dump(model, PATH + "xgboost_model_" + directory_encode + ".dat")
 
 # Load the trained model
-# model = joblib.load(PATH + "lgbm_model_" + directory_encode + ".dat")
+# model = joblib.load(PATH + "xgboost_model_" + directory_encode + ".dat")
 
-x_train=[]
-y_train=[]
 # Extract test data
 print("extracting test data ")
 x_test = pd.read_csv(PATH+directory_encode+'/X_test.csv')
@@ -52,8 +49,11 @@ y_test = pd.read_csv(PATH+directory_encode+'/Y_test.csv').to_numpy().astype(np.f
 y_test = y_test.reshape(-1)  # Reshape to a 1D array
 print("predicting ")
 
+# Convert test data to DMatrix format
+dtest = xgb.DMatrix(x_test)
+
 # Predict probabilities
-probs = model.predict(x_test)
+probs = model.predict(dtest)
 
 # Predict classes
 y_pred = (probs > 0.5).astype(int)
