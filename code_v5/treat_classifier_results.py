@@ -12,9 +12,10 @@ import os
 import json
 
 nb_chevaux_fantomes = 20
+ignore_fantomes=True
 specialite = "_attele"
 model_choice = "lightgbm"  # Options: "xgboost", "randomForest", "lightgbm","linregressor"
-model_extension = ''
+model_extension = '_03_512_06_6000' #'_05_512_07_3000'
 
 
 print("Loading DATAS")
@@ -172,6 +173,8 @@ def generate_matrices(probas,results,numsPMU):
                 proba=probas[k]
                 k+=1
                 matrice[ch1][ch2]=proba
+        if ignore_fantomes : 
+            matrice = matrice[:nb_participants][:nb_participants]
         final_result=final_res(arrives,nb_participants,non_partants)
         res=res+final_result
         numeros_PMU=numeros_PMU+[i+1 for i in range(nb_participants)]
@@ -179,7 +182,7 @@ def generate_matrices(probas,results,numsPMU):
         cotes_normales=np.hstack((cotes_normales, normaux))
         cotes_non_partants=np.hstack((cotes_non_partants, c_non_partants))
         ids_course=ids_course+ids
-        matrices.append([matrice,nb_participants])
+        matrices.append(borda_count(correct_matrice(matrice),nb_participants))
     return matrices,res,ids_course,numeros_PMU,cotes_normales,cotes_non_partants
 
 def nicolas_count(matrice,nb_courreurs):
@@ -261,7 +264,7 @@ for n,r in zip(lines,lines_res) :
     cotes_non_partants = np.hstack((cotes_non_partants, part_cotes_non_partants))
     print("calculating final probas")
     for mat in matrices_2:
-        for prob in normalize_probas(borda_count(correct_matrice(mat[0]),mat[1])): #  borda_count(correct_matrice(mat[0]),mat[1]): #  normalize_probas(borda_count(correct_matrice(mat[0]),mat[1])): # 
+        for prob in normalize_probas(mat):  
             probs.append(prob)
 
 
@@ -278,7 +281,7 @@ final["RES"] = res
 final["NUM_PMU"] = numeros_PMU
 
 
-final.to_csv(PATH + directory_encode + '/resultats_'+model_choice+'_borda_norm.csv',index=False)
+final.to_csv(PATH + directory_encode + '/resultats_'+model_choice+'_borda_norm'+model_extension+'.csv',index=False)
         
 display_prob(probs,res)  
 plotProbas(probs)

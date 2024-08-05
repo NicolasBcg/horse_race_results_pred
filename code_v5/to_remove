@@ -1,5 +1,6 @@
 remove :  avis entrainneur ? date_reunion_post_encoding
 compute : parcour
-
+valeur mesure : = -1 ou vide en trot attele 2023
+intitule is same
 
 for plat: remove handicapDistance

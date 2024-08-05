@@ -15,7 +15,7 @@ ENCODER_TYPE = "ordinal" # or target label
 # print("import end "+str(time.time()-start))
 # print(data.head())
 
-list_to_onehot=["sexe","race","oeilleres","deferre","avisEntraineur", "d1","d2","d3","d4","d5","d6","d7","d8","d9"]#,"d10"]
+list_to_onehot=["sexe","race","oeilleres","deferre","avisEntraineur"]#, "d1","d2","d3","d4","d5","d6","d7","d8","d9","d10"]
 list_to_target=[]#["proprietaire","eleveur","driver"]
 o=[feature+".1" for feature in list_to_onehot]
 t=[feature+".1" for feature in list_to_target]

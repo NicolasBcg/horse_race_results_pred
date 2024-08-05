@@ -8,11 +8,11 @@ from sklearn.metrics import accuracy_score, log_loss
 import pandas as pd
 from path import *
 import sklearn.metrics as metrics
-recalc_prob = True
+recalc_prob = False
 lgbm=True
 xgboost=False
 model_choice = "lightgbm"  # Options: "xgboost", "randomForest", "lightgbm","linregressor"
-model_name = "lgbm_model_2020_2023.dat"
+model_name = "lgbm_model_2020_2023_reduced_05_512_07_3000.dat"
 
 if xgboost:
     # Load the XGBoost model
@@ -88,7 +88,7 @@ if lgbm:
     importance_tuples = sorted(zip(feature_names, importance), key=lambda x: x[1], reverse=True)
 
     # Separate the feature names and their scores (for the middle 50 features, in this example)
-    features, scores = zip(*importance_tuples[:40])
+    features, scores = zip(*importance_tuples[-50:])
 
     # Plot the feature importance for 'gain'
     plt.figure(figsize=(12, 8))
@@ -106,7 +106,7 @@ if lgbm:
     importance_weight_tuples = sorted(zip(feature_names, importance_weight), key=lambda x: x[1], reverse=True)
 
     # Separate the feature names and their scores (top 40 features)
-    features_weight, scores_weight = zip(*importance_weight_tuples[:40])
+    features_weight, scores_weight = zip(*importance_weight_tuples[-50:])
 
     # Plot the feature importance for 'weight'
     plt.subplot(1, 2, 2)

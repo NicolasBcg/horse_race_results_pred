@@ -17,9 +17,9 @@ def recup_infos(date_to_get):
     for reunion in programme["reunions"]:
         num_reunion = reunion['numOfficiel']
         for course in reunion['courses']:
-            time.sleep(0.4)
+            time.sleep(0.01)
             get_participants(date_to_get,str(num_reunion),str(course["numOrdre"]))
-            time.sleep(0.1)
+            time.sleep(0.01)
             get_prealable_rapports(date_to_get,str(num_reunion),str(course["numOrdre"]))
             get_rapports(date_to_get,str(num_reunion),str(course["numOrdre"]))
 

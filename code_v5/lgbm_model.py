@@ -21,11 +21,11 @@ print("training")
 params = {
     'objective': 'binary',
     'metric': 'binary_logloss',
-    'learning_rate': 0.05,
+    'learning_rate': 0.03,
     'max_depth': -1,
-    'num_leaves': 256, #max 256
-    'subsample': 0.7,
-    'colsample_bytree': 0.7,
+    'num_leaves': 512, #max 256
+    'subsample': 0.6,
+    'colsample_bytree': 0.6,
     'seed': 42
 }
 
@@ -34,7 +34,7 @@ dtrain = lgb.Dataset(x_train, label=y_train)
 print("dataset_created")
 # Train the model
 start = time.time()
-model = lgb.train(params, dtrain, num_boost_round=3000)
+model = lgb.train(params, dtrain, num_boost_round=6000)
 print("training end "+str(time.time()-start))
 
 # Save the trained model

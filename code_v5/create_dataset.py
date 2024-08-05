@@ -8,7 +8,7 @@ import random
 
 random.seed(42)
 NB_FANTOMES=20
-FILE_FANTOME="fantomes_2nd_sem_2022"
+FILE_FANTOME="fantomes_2nd_sem_2022_reduced"
 FEATURES_REUNION = [
     ["dateReunion"],
     ["nature","UNKNOWN"],
@@ -23,7 +23,7 @@ FEATURES_COURSE = [
     ["discipline","UNKNOWN"],
     ["categorieParticularite","UNKNOWN"],
     ["typePiste","UNKNOWN"],
-    [["penetrometre","valeurMesure"],-1],
+    #[["penetrometre","valeurMesure"],-1],
     [["penetrometre","intitule"],"UNKNOWN"],
 
 ]
@@ -69,12 +69,12 @@ FEATURES_JOCKEY = [
 ]
 NB_FEATURES_ELEVEUR=6
 FEATURES_ELEVEUR = [
-    ["eleveur_courses_m-1",0],
-    ["eleveur_premier_m-1",0],
-    ["eleveur_second_m-1",0],
-    ["eleveur_troisieme_m-1",0],
-    ["eleveur_non_arrive_m-1",0],
-    ["eleveur_dernier_m-1",0],
+    # ["eleveur_courses_m-1",0],
+    # ["eleveur_premier_m-1",0],
+    # ["eleveur_second_m-1",0],
+    # ["eleveur_troisieme_m-1",0],
+    # ["eleveur_non_arrive_m-1",0],
+    # ["eleveur_dernier_m-1",0],
     # ["eleveur_courses_m-6-18",0],
     # ["eleveur_premier_m-6-18",0],
     # ["eleveur_second_m-6-18",0],
@@ -90,12 +90,12 @@ FEATURES_ELEVEUR = [
 ]
 NB_FEATURES_PROPRIETAIRE=6
 FEATURES_PROPRIETAIRE = [
-    ["proprietaire_courses_m-1",0],
-    ["proprietaire_premier_m-1",0],
-    ["proprietaire_second_m-1",0],
-    ["proprietaire_troisieme_m-1",0],
-    ["proprietaire_non_arrive_m-1",0],
-    ["proprietaire_dernier_m-1",0],
+    # ["proprietaire_courses_m-1",0],
+    # ["proprietaire_premier_m-1",0],
+    # ["proprietaire_second_m-1",0],
+    # ["proprietaire_troisieme_m-1",0],
+    # ["proprietaire_non_arrive_m-1",0],
+    # ["proprietaire_dernier_m-1",0],
     # ["proprietaire_courses_m-2-3",0],
     # ["proprietaire_premier_m-2-3",0],
     # ["proprietaire_second_m-2-3",0],
@@ -150,6 +150,7 @@ FEATURES_MUSIQUE=[
     ["r10"],
     # ["d10"],
 ]
+FEATURES_MUSIQUE = FEATURES_MUSIQUE[:19:2]
 FEATURES_CHEVAL_PLAT_TROT_ATTELE=[
     ["numPmu"],
     ["age",None],
@@ -280,8 +281,9 @@ def get_features_musique(musique):
             liste_resultat.append(-10)
         else:
             liste_resultat.append('U')
+    lr=liste_resultat[:19:2]  # Limiter la liste à 20 éléments
 
-    return liste_resultat[:19]  # Limiter la liste à 20 éléments
+    return lr
 
 def get_Features_jockey(jockey,date):
     res=[0 for _ in range(len(FEATURES_JOCKEY))]
@@ -316,16 +318,16 @@ def get_Features_eleveur(eleveur,date):
     res=[0 for _ in range(len(FEATURES_ELEVEUR))]
     if eleveur in eleveurs:
         year_semester=div_time(date)
-        last_month_div=div_time(date,-1)
+        # last_month_div=div_time(date,-1)
         # last_month_div_1_6 = [div_time(date,-m) for m in range(1,7)]
         # last_month_div_6_18 = [div_time(date,-m) for m in range(7,18)]
         for key in resultats_eleveurs[eleveur].keys():
             if int(key)<int(year_semester):
                 for i in range(NB_FEATURES_ELEVEUR):
-                    res[i+NB_FEATURES_ELEVEUR]+=resultats_eleveurs[eleveur][key][i]
-                if key == last_month_div:
-                    for i in range(NB_FEATURES_ELEVEUR):
-                        res[i]+=resultats_eleveurs[eleveur][key][i]
+                    res[i]+=resultats_eleveurs[eleveur][key][i]
+                # if key == last_month_div:
+                #     for i in range(NB_FEATURES_ELEVEUR):
+                #         res[i]+=resultats_eleveurs[eleveur][key][i]
                 # elif key in last_month_div_6_18:
                 #     for i in range(NB_FEATURES_JOCKEY):
                 #         res[i+NB_FEATURES_ELEVEUR]+=resultats_eleveurs[eleveur][key][i]
@@ -335,30 +337,30 @@ def get_FEATURES_PROPRIETAIRE(proprietaire,date):
     res=[0 for _ in range(len(FEATURES_PROPRIETAIRE))]
     if proprietaire in proprietaires:
         year_semester=div_time(date)
-        last_month_div=div_time(date,-1)
+        # last_month_div=div_time(date,-1)
         # last_month_div_2_3 = [div_time(date,-2),div_time(date,-3)]
         # last_month_div_4_6 = [div_time(date,-m) for m in range(4,7)]
         # last_month_div_7_12 = [div_time(date,-m) for m in range(7,13)]
         # last_month_div_13_24 = [div_time(date,-m) for m in range(13,24)]
         for key in resultats_proprietaires[proprietaire].keys():
             if int(key)<int(year_semester):
-                for i in range(NB_FEATURES_JOCKEY):
-                    res[i+NB_FEATURES_JOCKEY]+=resultats_proprietaires[proprietaire][key][i]
-                if key == last_month_div:
-                    for i in range(NB_FEATURES_JOCKEY):
-                        res[i]+=resultats_proprietaires[proprietaire][key][i]
+                for i in range(NB_FEATURES_PROPRIETAIRE):
+                    res[i]+=resultats_proprietaires[proprietaire][key][i]
+                # if key == last_month_div:
+                #     for i in range(NB_FEATURES_PROPRIETAIRE):
+                #         res[i]+=resultats_proprietaires[proprietaire][key][i]
                 # elif key in last_month_div_2_3:
-                #     for i in range(NB_FEATURES_JOCKEY):
-                #         res[i+NB_FEATURES_JOCKEY]+=resultats_proprietaires[proprietaire][key][i]
+                #     for i in range(NB_FEATURES_PROPRIETAIRE):
+                #         res[i+NB_FEATURES_PROPRIETAIRE]+=resultats_proprietaires[proprietaire][key][i]
                 # elif key in last_month_div_4_6:
-                #     for i in range(NB_FEATURES_JOCKEY):
-                #         res[i+2*NB_FEATURES_JOCKEY]+=resultats_proprietaires[proprietaire][key][i]
+                #     for i in range(NB_FEATURES_PROPRIETAIRE):
+                #         res[i+2*NB_FEATURES_PROPRIETAIRE]+=resultats_proprietaires[proprietaire][key][i]
                 # elif key in last_month_div_7_12:
-                #     for i in range(NB_FEATURES_JOCKEY):
-                #         res[i+3*NB_FEATURES_JOCKEY]+=resultats_proprietaires[proprietaire][key][i]
+                #     for i in range(NB_FEATURES_PROPRIETAIRE):
+                #         res[i+3*NB_FEATURES_PROPRIETAIRE]+=resultats_proprietaires[proprietaire][key][i]
                 # elif key in last_month_div_13_24:
-                #     for i in range(NB_FEATURES_JOCKEY):
-                #         res[i+4*NB_FEATURES_JOCKEY]+=resultats_proprietaires[proprietaire][key][i]
+                #     for i in range(NB_FEATURES_PROPRIETAIRE):
+                #         res[i+4*NB_FEATURES_PROPRIETAIRE]+=resultats_proprietaires[proprietaire][key][i]
     return res
 
 def extract_cotes(raport):
@@ -616,6 +618,6 @@ def generate_fantomes(date1,date2,dname,select_specialite="all"):
     fantomes={"PLAT" : dataset_plat,"TROT_ATTELE" : dataset_attele}
     with open(PATH_TO_DATASETS+"FANTOMES_"+dname+".json", "w") as json_file:
         json.dump(fantomes, json_file)
-# generate_fantomes("1/7/2022","1/1/2023","fantomes_2nd_sem_2022",select_specialite="all")
+# generate_fantomes("1/7/2022","1/1/2023","fantomes_2nd_sem_2022_reduced",select_specialite="all")
 
     
