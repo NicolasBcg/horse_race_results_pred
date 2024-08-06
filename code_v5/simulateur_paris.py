@@ -15,18 +15,28 @@ import matplotlib.pyplot as plt
 # 6 : ["RES"]
 # 7 : ["SIMPLE_GAGNANT_NP"]
 # 8 : ["E_SIMPLE_PLACE_NP"]
-# 9 : ["DIFF_CLASSIQUE_E_PARIS"]
-# 10 : ["DIFF_CLASSIQUE_E_PARIS_PROP"]
-def get_proba_cote(horse,bet_type):
+# 9 : ["cotes_prealable"]
+# 10 : ["e_cote_prealable"]
+def get_proba_cote(horse,bet_type,no_diff=False):
     p=horse[3]
     r=horse[6]
     c_classic=round(horse[4],2)
     c_e=round(horse[5],2)
-    c_max = max(c_classic,c_e)
-
     c_np_classic=round(horse[7],2)
     c_np_e=round(horse[8],2)
-    c_np_max = max(c_np_classic,c_np_e)
+
+    probable = horse[9]
+    e_probable = horse[10]
+    if no_diff:
+        c_max = max(c_classic,c_e)
+        c_np_max = max(c_np_classic,c_np_e)
+    else : 
+        if probable>e_probable:
+            c_max=c_classic
+            c_np_max=c_np_classic
+        else :
+            c_max=c_e
+            c_np_max=c_np_e
     if bet_type=="max":
         c = c_max
         c_np= c_np_max
@@ -39,12 +49,12 @@ def get_proba_cote(horse,bet_type):
         c = c_e
     else :
         c = -1  
-    if c_classic < 0.5 or c_e < 0.5:
+    if probable < 0.5 or e_probable < 0.5:
         diff = 0
         diff_prop = 1
     else :
-        diff = abs(c_classic-c_e)
-        diff_prop = max(c_classic,c_e)/min(c_classic,c_e)
+        diff = abs(probable-e_probable)
+        diff_prop = max(probable,e_probable)/min(probable,e_probable)
     return p,c,r,c_np,diff, diff_prop
 
 def bet_on_trio(courses,seuilProba=0.13, bet_type="max", diff_limit=0, diff_prop_limit=1):
@@ -128,6 +138,7 @@ def bet_on_winner(courses,seuilProba=0.13, bet_type="max", diff_limit=0, diff_pr
         elif c1==-1:
             u+=1
         elif p1-p2>seuilProba and diff1 >= diff_limit and ratio1 >= diff_prop_limit:#p1-p2>seuilProba-(nbParticipants/1000)+0.01 and p1*c1>seuilEV and nbParticipants>=12: # p1-p2>seuilProba-(nbParticipants/800)+0.0205 and p1*c1>seuilEV:
+
             paris.append(paris[-1] + c1 - 1 if r1 == 1  else paris[-1] - 1)
             paris_by_months[month].append(paris_by_months[month][-1] + c1 - 1 if r1 == 1 else paris_by_months[month][-1] - 1)
         # else :
@@ -175,17 +186,18 @@ def bet_on_place(courses,seuilProba=0.13, bet_type="max", diff_limit=0, diff_pro
                     non_partant+=1
                 elif c1==-1 :
                     u+=1
+                
                 elif p1-p4>seuilProba and diff1 >= diff_limit and ratio1 >= diff_prop_limit:
                     paris.append(paris[-1] + c1 - 1 if r1 !=0  else paris[-1] - 1)
                     paris_by_months[month].append(paris_by_months[month][-1] + c1-1 if r1 != 0 else paris_by_months[month][-1] - 1)
                     
-                # if r2==-10:
-                #     non_partant+=1
-                # elif c2==-1 :
-                #     u+=1
-                # elif p2-p3>seuilProba*0.95 :
-                #     paris.append(paris[-1] + c2 - 1 if r2 !=0  else paris[-1] - 1)
-                #     paris_by_months[month].append(paris_by_months[month][-1] + c2-1 if r2 != 0 else paris_by_months[month][-1] - 1)
+                if r2==-10:
+                    non_partant+=1
+                elif c2==-1 :
+                    u+=1
+                elif p2-p3>seuilProba*0.95 and diff1 >= diff_limit and ratio1 >= diff_prop_limit:
+                    paris.append(paris[-1] + c2 - 1 if r2 !=0  else paris[-1] - 1)
+                    paris_by_months[month].append(paris_by_months[month][-1] + c2-1 if r2 != 0 else paris_by_months[month][-1] - 1)
     print("non_partant ="+str(non_partant))      
     print("u="+str(u))
         
@@ -226,7 +238,7 @@ def sortHorses(horses):
     return sorted(horses, key=lambda x: x[3], reverse=True)
 
 
-def splitCoursesv2(probs,ids_course,numeros_PMU,classique,e_paris,results,classique_np,e_paris_np):
+def splitCoursesv2(probs,ids_course,numeros_PMU,classique,e_paris,results,classique_np,e_paris_np,cotes_prealables,e_cotes_prealables):
     splited=[]
     lastId=0
     lastCourse=ids_course[0]
@@ -235,13 +247,13 @@ def splitCoursesv2(probs,ids_course,numeros_PMU,classique,e_paris,results,classi
         if course != lastCourse:
             horses=[]
             for k in range(lastId,j):
-                horses.append([k,ids_course.iloc[k],numeros_PMU.iloc[k],probs.iloc[k],classique.iloc[k],e_paris.iloc[k],results.iloc[k],classique_np.iloc[k],e_paris_np.iloc[k]]) #(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_GAGNANT"],df["E_SIMPLE_PLACE"])
+                horses.append([k,ids_course.iloc[k],numeros_PMU.iloc[k],probs.iloc[k],classique.iloc[k],e_paris.iloc[k],results.iloc[k],classique_np.iloc[k],e_paris_np.iloc[k],cotes_prealables.iloc[k],e_cotes_prealables.iloc[k]]) #(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_GAGNANT"],df["E_SIMPLE_PLACE"])
             splited.append(sortHorses(horses))
             lastId=j
             lastCourse=ids_course.iloc[j]
     horses=[]
     for k in range(lastId,len(ids_course)):
-        horses.append([k,ids_course.iloc[k],numeros_PMU.iloc[k],probs.iloc[k],classique.iloc[k],e_paris.iloc[k],results.iloc[k],classique_np.iloc[k],e_paris_np.iloc[k]])
+        horses.append([k,ids_course.iloc[k],numeros_PMU.iloc[k],probs.iloc[k],classique.iloc[k],e_paris.iloc[k],results.iloc[k],classique_np.iloc[k],e_paris_np.iloc[k],cotes_prealables.iloc[k],e_cotes_prealables.iloc[k]])
     splited.append(sortHorses(horses))
     return splited
 
@@ -271,10 +283,11 @@ def calcDrawbacksPlus(paris):
 
 
 
-def calc_res(paris_version,paris_name,courses,seuilProba=0.15,bet_type="max"):
+def calc_res(paris_version,paris_name,courses,seuilProba=0.15,bet_type="max", diff_limit=0, diff_prop_limit=1):
     print("---------")
     print("Seuil proba = "+str(seuilProba)+" "+paris_name+" bet_type = " +bet_type)
-    paris, paris_par_mois=paris_version(courses,seuilProba=seuilProba,bet_type=bet_type)
+    print("diff_limit = "+str(diff_limit)+"  diff_prop_limit = "+str(diff_prop_limit))
+    paris, paris_par_mois=paris_version(courses,seuilProba=seuilProba,bet_type=bet_type, diff_limit=diff_limit, diff_prop_limit=diff_prop_limit)
     dr,nb_paris_gagnants=calcDrawbacks(paris)
     print("nb paris = "+str(len(paris)))
     print("Gagnants = "+str(nb_paris_gagnants))
@@ -299,42 +312,43 @@ def test_paris(courses,resultats,types_paris=[]):
     p = [bet_on_winner,bet_on_place,bet_on_couple,bet_on_trio,bet_on_winner_pb_pure,bet_on_place_pb_pure]
     pname = ["bet_on_winner","bet_on_place","bet_on_couple","bet_on_trio","bet_on_winner_pb_pure","bet_on_place_pb_pure"]
     allParis=[]
-    for seuilProb in  [0.025]:# [0.14,0.16,0.18]:#  [0.05,0.1]:#[0.15,0.16,0.18,0.2]: # [0.3,0.35,0.4,0.5]:# [0.15,0.2,0.25]: #   [0.15,0.2,0.25,0.3]: #
+    for seuilProb in  [0,0.005]:# [0.14,0.16,0.18]:#  [0.05,0.1]:#[0.15,0.16,0.18,0.2]: # [0.3,0.35,0.4,0.5]:# [0.15,0.2,0.25]: #   [0.15,0.2,0.25,0.3]: #
         for bet_type in ["max"]: # ["max"]: #["max"]:#  ["max","classic","e_paris"]: # 
-            for pr in types_paris:
-                paris = calc_res(p[pr],pname[pr],courses,seuilProba=seuilProb,bet_type=bet_type)
-                allParis.append(paris)
+            for diff_prop_limit in [1.05,1.1,1.2]:##diff_limit
+                for pr in types_paris:
+                    paris = calc_res(p[pr],pname[pr],courses,seuilProba=seuilProb,bet_type=bet_type,diff_prop_limit=diff_prop_limit)
+                    allParis.append(paris)
 
 # directory_encode="2021_2022_attele_reduced"
 # with open(PATH+directory_encode+'/resultats_borda_trio_norm_20f_same_year_10_09_200.pkl', "rb") as f:
 
-df=pd.read_csv(PATH + directory_encode + '/resultats_lightgbm_borda_norm_03_512_06_6000.csv')
-courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_GAGNANT"],df["E_SIMPLE_GAGNANT"],df["RES"],df["SIMPLE_GAGNANT_NP"],df["E_SIMPLE_GAGNANT_NP"])
+df=pd.read_csv(PATH + directory_encode + '/resultats_lightgbm_borda_norm_05_512_07_3000.csv')
+courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_GAGNANT"],df["E_SIMPLE_GAGNANT"],df["RES"],df["SIMPLE_GAGNANT_NP"],df["E_SIMPLE_GAGNANT_NP"],df["COTES_PROBABLES"],df["E_COTES_PROBABLES"])
 test_paris(courses,df["RES"],[0])
 print("\n PLACE \n")
-courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_PLACE"],df["E_SIMPLE_PLACE"],df["RES"],df["SIMPLE_GAGNANT_NP"],df["E_SIMPLE_GAGNANT_NP"])
-test_paris(courses,df["RES"],[1])
-print("\n COUPLE \n")
-courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["COUPLE_GAGNANT"],df["E_COUPLE_GAGNANT"],df["RES"],df["COUPLE_GAGNANT_NP"],df["E_COUPLE_GAGNANT_NP"])
-test_paris(courses,df["RES"],[2])
-print("\n TRIO \n")
-courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["TRIO"],df["E_TRIO"],df["RES"],df["TRIO_NP"],df["TRIO_NP"])
-test_paris(courses,df["RES"],[3])
+# courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_PLACE"],df["E_SIMPLE_PLACE"],df["RES"],df["SIMPLE_GAGNANT_NP"],df["E_SIMPLE_GAGNANT_NP"],df["COTES_PROBABLES"],df["E_COTES_PROBABLES"])
+# test_paris(courses,df["RES"],[1])
+# print("\n COUPLE \n")
+# courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["COUPLE_GAGNANT"],df["E_COUPLE_GAGNANT"],df["RES"],df["COUPLE_GAGNANT_NP"],df["E_COUPLE_GAGNANT_NP"],df["COTES_PROBABLES"],df["E_COTES_PROBABLES"])
+# test_paris(courses,df["RES"],[2])
+# print("\n TRIO \n")
+# courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["TRIO"],df["E_TRIO"],df["RES"],df["TRIO_NP"],df["TRIO_NP"],df["COTES_PROBABLES"],df["E_COTES_PROBABLES"])
+# test_paris(courses,df["RES"],[3])
 
-print("\n PREVIOUS TEST \n")
+# print("\n PREVIOUS TEST \n")
 
-df=pd.read_csv(PATH + directory_encode + '/resultats_lightgbm_borda_norm_03_512_06_6000_ignore_fantomes.csv')
-courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_GAGNANT"],df["E_SIMPLE_GAGNANT"],df["RES"],df["SIMPLE_GAGNANT_NP"],df["E_SIMPLE_GAGNANT_NP"])
-test_paris(courses,df["RES"],[0])
-print("\n PLACE \n")
-courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_PLACE"],df["E_SIMPLE_PLACE"],df["RES"],df["SIMPLE_GAGNANT_NP"],df["E_SIMPLE_GAGNANT_NP"])
-test_paris(courses,df["RES"],[1])
-print("\n COUPLE \n")
-courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["COUPLE_GAGNANT"],df["E_COUPLE_GAGNANT"],df["RES"],df["COUPLE_GAGNANT_NP"],df["E_COUPLE_GAGNANT_NP"])
-test_paris(courses,df["RES"],[2])
-print("\n TRIO \n")
-courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["TRIO"],df["E_TRIO"],df["RES"],df["TRIO_NP"],df["TRIO_NP"])
-test_paris(courses,df["RES"],[3])
+# df=pd.read_csv(PATH + directory_encode + '/resultats_lightgbm_borda_norm_03_512_06_6000_ignore_fantomes.csv')
+# courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_GAGNANT"],df["E_SIMPLE_GAGNANT"],df["RES"],df["SIMPLE_GAGNANT_NP"],df["E_SIMPLE_GAGNANT_NP"],df["COTES_PROBABLES"],df["E_COTES_PROBABLES"],df["COTES_PROBABLES"],df["E_COTES_PROBABLES"])
+# test_paris(courses,df["RES"],[0])
+# print("\n PLACE \n")
+# courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_PLACE"],df["E_SIMPLE_PLACE"],df["RES"],df["SIMPLE_GAGNANT_NP"],df["E_SIMPLE_GAGNANT_NP"],df["COTES_PROBABLES"],df["E_COTES_PROBABLES"],df["COTES_PROBABLES"],df["E_COTES_PROBABLES"])
+# test_paris(courses,df["RES"],[1])
+# print("\n COUPLE \n")
+# courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["COUPLE_GAGNANT"],df["E_COUPLE_GAGNANT"],df["RES"],df["COUPLE_GAGNANT_NP"],df["E_COUPLE_GAGNANT_NP"],df["COTES_PROBABLES"],df["E_COTES_PROBABLES"])
+# test_paris(courses,df["RES"],[2])
+# print("\n TRIO \n")
+# courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["TRIO"],df["E_TRIO"],df["RES"],df["TRIO_NP"],df["TRIO_NP"],df["COTES_PROBABLES"],df["E_COTES_PROBABLES"])
+# test_paris(courses,df["RES"],[3])
 # 0 : ["PROBAS"]
 # 1 : ["IDS_COURSES"] 
 # 2 : ["NUM_PMU"]

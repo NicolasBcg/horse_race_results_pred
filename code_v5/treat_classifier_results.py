@@ -12,10 +12,10 @@ import os
 import json
 
 nb_chevaux_fantomes = 20
-ignore_fantomes=True
+ignore_fantomes=False
 specialite = "_attele"
 model_choice = "lightgbm"  # Options: "xgboost", "randomForest", "lightgbm","linregressor"
-model_extension = '_03_512_06_6000' #'_05_512_07_3000'
+model_extension = '_05_512_07_3000' #'_05_512_07_3000'
 
 
 print("Loading DATAS")
@@ -148,15 +148,23 @@ def generate_matrices(probas,results,numsPMU):
     matrices=[]
     k=0
     res=[]
+    cotes_prealables = []
+    e_cotes_prealables = []
     cotes_normales=np.array([[] for _ in CATEGORIES])
     cotes_non_partants=np.array([[] for _ in CATEGORIES])
     ids_course=[]
     numeros_PMU=[]
     for c in range(len(results)):
         nb_participants=results["nbParticipants"].iloc[c]
+        numeros_PMU=numeros_PMU+[i+1 for i in range(nb_participants)]
         arrives=results["resultats"].iloc[c]
+        cotes_prealable=eval(results["cotes"].iloc[c])
+        cotes_prealables= cotes_prealables + cotes_prealable
+        e_cotes_prealable=eval(results["e_cotes"].iloc[c])
+        e_cotes_prealables= e_cotes_prealables + e_cotes_prealable
         non_partants=results["non_partants"].iloc[c]
         ids=[results["idCourse"].iloc[c] for _ in range(nb_participants)] 
+        ids_course=ids_course+ids
         matrice=np.ones((nb_chevaux_fantomes, nb_chevaux_fantomes), dtype=float)
         #print("nb participants : "+str(nb_participants))
         for i in range(nb_participants):
@@ -177,13 +185,12 @@ def generate_matrices(probas,results,numsPMU):
             matrice = matrice[:nb_participants][:nb_participants]
         final_result=final_res(arrives,nb_participants,non_partants)
         res=res+final_result
-        numeros_PMU=numeros_PMU+[i+1 for i in range(nb_participants)]
         normaux,c_non_partants= getraports(ids[0],nb_participants)
         cotes_normales=np.hstack((cotes_normales, normaux))
         cotes_non_partants=np.hstack((cotes_non_partants, c_non_partants))
-        ids_course=ids_course+ids
         matrices.append(borda_count(correct_matrice(matrice),nb_participants))
-    return matrices,res,ids_course,numeros_PMU,cotes_normales,cotes_non_partants
+
+    return matrices,res,ids_course,numeros_PMU,cotes_normales,cotes_non_partants,cotes_prealables,e_cotes_prealables
 
 def nicolas_count(matrice,nb_courreurs):
     res = []
@@ -246,7 +253,7 @@ for i in range(len(resultats)):
         lines_res.append(0)
 
 probs = []
-res,ids_courses,numeros_PMU,cotes,cotes_non_partants,probs = [],[],[],np.array([[] for _ in CATEGORIES]),np.array([[] for _ in CATEGORIES]),[]
+res,ids_courses,numeros_PMU,cotes_prealables,e_cotes_prealables,cotes,cotes_non_partants,probs = [],[],[],[],[],np.array([[] for _ in CATEGORIES]),np.array([[] for _ in CATEGORIES]),[]
 for n,r in zip(lines,lines_res) :
     partition = x_test.iloc[:n]
     x_test = x_test.iloc[n:]
@@ -256,10 +263,12 @@ for n,r in zip(lines,lines_res) :
     resultats = resultats.iloc[r:]
     
     probas = predict(partition)
-    matrices_2,part_res,part_ids_courses,part_numeros_PMU,part_cotes,part_cotes_non_partants=generate_matrices(probas,partition_resultats,num_partition)
+    matrices_2,part_res,part_ids_courses,part_numeros_PMU,part_cotes,part_cotes_non_partants,cotes_prealables_part,e_cotes_prealables_part=generate_matrices(probas,partition_resultats,num_partition)
     res = res + part_res
     ids_courses = ids_courses + part_ids_courses
     numeros_PMU = numeros_PMU + part_numeros_PMU
+    cotes_prealables = cotes_prealables + cotes_prealables_part
+    e_cotes_prealables = e_cotes_prealables + e_cotes_prealables_part
     cotes = np.hstack((cotes, part_cotes))
     cotes_non_partants = np.hstack((cotes_non_partants, part_cotes_non_partants))
     print("calculating final probas")
@@ -279,6 +288,8 @@ final["PROBAS"] = probs
 final["IDS_COURSES"] = ids_courses
 final["RES"] = res
 final["NUM_PMU"] = numeros_PMU
+final["COTES_PROBABLES"] = cotes_prealables
+final["E_COTES_PROBABLES"] = e_cotes_prealables
 
 
 final.to_csv(PATH + directory_encode + '/resultats_'+model_choice+'_borda_norm'+model_extension+'.csv',index=False)

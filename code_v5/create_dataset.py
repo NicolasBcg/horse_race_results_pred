@@ -8,7 +8,7 @@ import random
 
 random.seed(42)
 NB_FANTOMES=20
-FILE_FANTOME="fantomes_2nd_sem_2022_reduced"
+FILE_FANTOME="fantomes_milieu_2022"
 FEATURES_REUNION = [
     ["dateReunion"],
     ["nature","UNKNOWN"],
@@ -500,10 +500,14 @@ def generate_rows_from_race(race,training=True,select_specialite="all"):
             if not training :
                 try:
                     with open(PATH_TO_CACHE+'rapports_prealable/'+idCourse+'.json', 'r') as f:
-                        raport = json.load(f)
-                        course = [resultats]+[idCourse]+[nb_participants]+[extract_cotes(raport)]+[time_course]+[non_partants]
+                        cotes = extract_cotes(json.load(f))
+                    with open(PATH_TO_CACHE+'E_simple_rapports_prealable/'+idCourse+'.json', 'r') as f:
+                        e_cotes = extract_cotes(json.load(f))
+                    course = [resultats]+[idCourse]+[nb_participants]+[cotes]+[time_course]+[non_partants]+[e_cotes]
+
+                      
                 except:
-                    course = [resultats]+[idCourse]+[nb_participants]+[[-1 for _ in range(nb_participants)]]+[time_course]+[non_partants]
+                    course = [resultats]+[idCourse]+[nb_participants]+[[-1 for _ in range(nb_participants)]]+[time_course]+[non_partants]+[[-1 for _ in range(nb_participants)]]
             else : 
                 course = []
 
@@ -580,9 +584,9 @@ def generate_dataset(date1,date2,dname,training=True,select_specialite="all"):
         dfplat.to_csv(PATH_TO_CACHE+"datasets\\"+dname+"_plat.csv", mode='a', index=False, header=False)
     if not training:
         if select_specialite=="all" or select_specialite=="attele":
-            pd.DataFrame(courses_trot, columns =["resultats","idCourse","nbParticipants","cotes","heure_depart","non_partants"]).to_csv(PATH_TO_CACHE+"datasets\\"+dname+"_attele_res.csv", mode='w', index=False, header=True)
+            pd.DataFrame(courses_trot, columns =["resultats","idCourse","nbParticipants","cotes","heure_depart","non_partants","e_cotes"]).to_csv(PATH_TO_CACHE+"datasets\\"+dname+"_attele_res.csv", mode='w', index=False, header=True)
         if select_specialite=="all" or select_specialite=="plat":
-            pd.DataFrame(courses_plat, columns =["resultats","idCourse","nbParticipants","cotes","heure_depart","non_partants"]).to_csv(PATH_TO_CACHE+"datasets\\"+dname+"_plat_res.csv", mode='w', index=False, header=True)
+            pd.DataFrame(courses_plat, columns =["resultats","idCourse","nbParticipants","cotes","heure_depart","non_partants","e_cotes"]).to_csv(PATH_TO_CACHE+"datasets\\"+dname+"_plat_res.csv", mode='w', index=False, header=True)
 
 def generate_fantomes(date1,date2,dname,select_specialite="all"):
     #init files and df
@@ -618,6 +622,6 @@ def generate_fantomes(date1,date2,dname,select_specialite="all"):
     fantomes={"PLAT" : dataset_plat,"TROT_ATTELE" : dataset_attele}
     with open(PATH_TO_DATASETS+"FANTOMES_"+dname+".json", "w") as json_file:
         json.dump(fantomes, json_file)
-# generate_fantomes("1/7/2022","1/1/2023","fantomes_2nd_sem_2022_reduced",select_specialite="all")
+generate_fantomes("1/4/2022","1/8/2022","fantomes_milieu_2022",select_specialite="all")
 
     
