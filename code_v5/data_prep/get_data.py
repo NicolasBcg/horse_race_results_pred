@@ -97,6 +97,9 @@ def get_course(date, reunion, course, use_cache=True):
     except:
         return -1
 
+
+
+
 def get_rapports(date, reunion, course, use_cache=True):
     URL = "https://tablette.turfinfo.api.pmu.fr/rest/client/1/programme/{}/R{}/C{}/rapports-definitifs?specialisation=TOUT".format(
         date, reunion, course
@@ -107,6 +110,7 @@ def get_rapports(date, reunion, course, use_cache=True):
 
     if use_cache:
         if os.path.exists(FILE):
+            
             return json.loads(open(FILE, "r").read())
         elif use_cache == "Only":
             return -1
@@ -119,14 +123,14 @@ def get_rapports(date, reunion, course, use_cache=True):
     try:
         result_json = json.loads(result.text)
         if "service" in result_json:
-            #print("Something went wrong with the request: Cannot download {} R{}C{}".format(date, reunion, course))
+            print("Something went wrong with the request: Cannot download {} R{}C{}".format(date, reunion, course))
             return -1
         with open(FILE, "w+") as file:
             file.write(json.dumps(result_json))
         return result_json
     except Exception as e:
         #print("Cannot download {} R{}C{}".format(date, reunion, course))
-        #print(e)
+        # print(e)
         return -1
 
 def get_prealable_rapports(date, reunion, course, use_cache=True, e_paris=False):
@@ -149,6 +153,7 @@ def get_prealable_rapports(date, reunion, course, use_cache=True, e_paris=False)
 
     if use_cache:
         if os.path.exists(FILE):
+            
             return json.loads(open(FILE, "r").read())
         elif use_cache == "Only":
             return -1
@@ -161,15 +166,16 @@ def get_prealable_rapports(date, reunion, course, use_cache=True, e_paris=False)
     try:
         result_json = json.loads(result.text)
         if "service" in result_json:
-            #print("Something went wrong with the request: Cannot download {} R{}C{}".format(date, reunion, course))
+            print("Something went wrong with the request: Cannot download {} R{}C{}".format(date, reunion, course))
 
             return -1
         with open(FILE, "w+") as file:
             file.write(json.dumps(result_json))
+            print(FILE+ "  created ")
         return result_json
     except Exception as e:
-        #print("Cannot download {} R{}C{}".format(date, reunion, course))
-        #print(e)
+        # print("Cannot download {} R{}C{}".format(date, reunion, course))
+        # print(e)
         return -1
 
 def go_through_courses(fn):
