@@ -2,33 +2,64 @@ from path import *
 import os
 import json
 from datetime import datetime
-dates=[date.split('.')[0] for date in os.listdir(PATH_TO_CACHE+"programmes\\")]
-print("FILES :")
-print(len(dates))
+
 
 K_horse=100
 K_jockey=60
 K_jockey2=10
 K_horse2 = 30
 D=10
-jockeys={} 
-updated_jockeys={}
 
-elo_jockeys={}
-updated_elo_jockeys={}
 
-elo_jockeys_v2={}
-updated_elo_jockeys_v2={}
-
-elo_horses={}
-elo_horses_v2={}
-
-horses={}
-
+dates=[date.split('.')[0] for date in os.listdir(PATH_TO_CACHE+"programmes\\")]
+print("FILES :")
+print(len(dates))
+dates_sorted = sorted(dates, key=lambda date: datetime.strptime(date, '%d%m%Y'))
+# Sort the dates after converting them to datetime objects
 dates_sorted = sorted(dates, key=lambda date: datetime.strptime(date, '%d%m%Y'))
 
-# Convert yyyymmdd format back to ddmmyyyy format
-files = [date+".json" for date in dates_sorted]
+last_elos_path=PATH_TO_DATASETS+"last_elo_calculated"
+# Check if the file exists
+if os.path.exists(last_elos_path):
+    # Open and read the file if it exists
+    with open(last_elos_path, 'r') as file:
+        last_elos = json.load(file)
+        # Convert the last_file_calculated to a datetime object
+        last_date = datetime.strptime(last_elos["last_file_calculated"].split('.')[0], '%d%m%Y')
+        # Exclude each file before last_file_calculated and also exclude last_file_calculated
+        filtered_dates = [date for date in dates_sorted if datetime.strptime(date, '%d%m%Y') > last_date]
+        files = [date+".json" for date in filtered_dates]
+else:
+    # Create the file with the specified structure if it does not exist
+    last_elos = {
+        "last_file_calculated" : "",
+        "elo_jockeys": {},
+        "elo_horses": {},
+        "elo_jockeys_v2": {},
+        "elo_horses_v2" : {},
+        "last_out_jockeys" : {},
+        "last_out_horses" : {}
+    }
+
+    # Convert yyyymmdd format back to ddmmyyyy format
+    files = [date+".json" for date in dates_sorted]
+
+jockeys=last_elos["last_out_jockeys"].copy() # last out
+updated_jockeys=last_elos["last_out_jockeys"].copy()
+
+elo_jockeys=last_elos["elo_jockeys"].copy()
+updated_elo_jockeys=last_elos["elo_jockeys"].copy()
+
+elo_jockeys_v2=last_elos["elo_jockeys_v2"].copy()
+updated_elo_jockeys_v2=last_elos["elo_jockeys_v2"].copy()
+
+elo_horses=last_elos["elo_horses"].copy()
+elo_horses_v2=last_elos["elo_horses_v2"].copy()
+
+horses=last_elos["last_out_horses"].copy() #last out
+
+print("init done")
+
 
 def update_jockeys(participants,updated_jockeys,updated_elo_jockeys,updated_elo_jockeys_v2,time_course,ordreArrivee):
         jockey_racers=[]
@@ -128,8 +159,6 @@ def update_jockeys(participants,updated_jockeys,updated_elo_jockeys,updated_elo_
             else:
                 updated_elo_jockeys[name]= 1400+new_elo
 
-
-
         new_elos_v2_horses=[0 for _ in horse_racers2]
         for index1,elo_horse1 in enumerate(horse_racers2):
             if num_racers[index1] in ordreArrivee:
@@ -227,3 +256,13 @@ for f in files:
         jockeys = updated_jockeys.copy()
         elo_jockeys = updated_elo_jockeys.copy()
         elo_jockeys_v2=updated_elo_jockeys_v2.copy()
+
+last_elos["last_out_jockeys"] = jockeys # last out
+last_elos["elo_jockeys"] = elo_jockeys
+last_elos["elo_jockeys_v2"] = elo_jockeys_v2
+last_elos["elo_horses"] = elo_horses
+last_elos["elo_horses_v2"] = elo_horses_v2
+last_elos["last_out_horses"] = horses #last out
+
+last_elos["last_file_calculated"] = f
+json.dump(last_elos, last_elos_path)
