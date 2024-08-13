@@ -8,11 +8,11 @@ from sklearn.metrics import accuracy_score, log_loss
 import pandas as pd
 from path import *
 import sklearn.metrics as metrics
-recalc_prob = False
+recalc_prob = True
 lgbm=True
 xgboost=False
 model_choice = "lightgbm"  # Options: "xgboost", "randomForest", "lightgbm","linregressor"
-model_name = "lgbm_model_2021_2023_attele_pere_mere.dat"
+model_name = "lgbm_model_2021_2023_attele_bis_07_350_07_2000.dat"
 
 if xgboost:
     # Load the XGBoost model
@@ -121,37 +121,6 @@ if lgbm:
 
 
 
-
-
-# Function to display probabilities
-def display_prob(probabilities, y_test):
-    res = [[0, 0] for _ in range(100)]
-    for i in range(len(probabilities)):
-        if int(probabilities[i] * 100) in range(100):
-            if y_test[i] == 1:
-                res[int(probabilities[i] * 100)][0] += 1
-            else:
-                res[int(probabilities[i] * 100)][1] += 1
-
-    i = 0.5
-    x = []
-    y = []
-    for r in res:
-        if r[0] + r[1] > 10:
-            x.append(i)
-            y.append(r[0] / (r[0] + r[1]))
-        i += 1
-    plt.plot(x, y)
-    plt.plot(x,[a/100 for a in x],color='orange')
-    plt.show()
-
-# Function to plot probabilities
-def plotProbas(pred):
-    winner_proba = [res * 100 for res in pred]
-    plt.hist(winner_proba, bins=[i for i in range(100)])
-    plt.show()
-
-
 def predict(races):
     if model_choice == "xgboost":
         dtest = xgb.DMatrix(races)
@@ -169,8 +138,8 @@ def predict(races):
 
 if recalc_prob:
     print("extracting test data ")
-    x_test = pd.read_csv(PATH+directory_encode+'/X_test.csv')
-    y_test = pd.read_csv(PATH+directory_encode+'/Y_test.csv').to_numpy().astype(np.float32)
+    x_test = pd.read_csv(PATH+directory_encode+'/X_valid.csv')
+    y_test = pd.read_csv(PATH+directory_encode+'/Y_valid.csv').to_numpy().astype(np.float32)
     y_test = y_test.reshape(-1)  # Reshape to a 1D array
     print("predicting ")
 
