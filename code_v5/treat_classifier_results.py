@@ -14,41 +14,42 @@ import json
 nb_chevaux_fantomes = 20
 ignore_fantomes=False
 specialite = "_attele"
-model_choice = "lightgbm"  # Options: "xgboost", "randomForest", "lightgbm","linregressor"
-model_extension = '_05_512_07_3000' #'_05_512_07_3000'
-
-
-print("Loading DATAS")
-x_test = pd.read_csv(PATH + directory_encode + '/X_test_2.csv')
-
-
-print("Loading Model")
-
+# model_choice = "lightgbm"  # Options: "xgboost", "randomForest", "lightgbm","linregressor"
+# model_extension = '_05_512_07_3000' #'_05_512_07_3000'
 CATEGORIES = ['SIMPLE_GAGNANT','E_SIMPLE_GAGNANT','SIMPLE_PLACE','E_SIMPLE_PLACE','COUPLE_GAGNANT','E_COUPLE_GAGNANT',"TRIO","E_TRIO"]
 
-if model_choice == "xgboost":
-    model = joblib.load(PATH + "xgboost_model_" + directory_encode + model_extension+".dat")
-elif model_choice == "randomForest":
-    model = joblib.load(PATH + "randomForest" + directory_encode + ".sav")
-elif model_choice == "lightgbm":
-    model = joblib.load(PATH + "lgbm_model_" + directory_encode  + model_extension+ ".dat")
-elif model_choice == "linregressor":
-    model = joblib.load(PATH + "logreg_model_" + directory_encode  + model_extension+ ".dat")
-    x_test = pd.DataFrame(x_test).fillna(pd.DataFrame(x_test).mean())
-else:
-    raise ValueError("Invalid model choice. Please select 'xgboost', 'randomForest', or 'lightgbm'.")
+
+def load_model_and_data(directory_encode,model_choice,model_extension):
+    print("Loading DATAS")
+    x_test = pd.read_csv(PATH + directory_encode + '/X_test.csv')
+    print("Loading Model")
+    if model_choice == "xgboost":
+        model = joblib.load(PATH + "xgboost_model_" + directory_encode + model_extension+".dat")
+    elif model_choice == "randomForest":
+        model = joblib.load(PATH + "randomForest" + directory_encode + ".sav")
+    elif model_choice == "lightgbm":
+        model = joblib.load(PATH + "lgbm_model_" + directory_encode  + model_extension+ ".dat")
+    elif model_choice == "linregressor":
+        model = joblib.load(PATH + "logreg_model_" + directory_encode  + model_extension+ ".dat")
+        x_test = pd.DataFrame(x_test).fillna(pd.DataFrame(x_test).mean())
+    else:
+        raise ValueError("Invalid model choice. Please select 'xgboost', 'randomForest', or 'lightgbm'.")
 
 
-try : 
-    numsPMU = x_test[["numPmu0", "numPmu01"]]
-    x_test=x_test.drop(["numPmu0", "numPmu01"],axis=1)
-except : 
-    numsPMU = x_test[["numPmu", "numPmu.1"]]
-    numsPMU = numsPMU.rename(columns={"numPmu": "numPmu0", "numPmu.1": "numPmu01"})
-print("Applying model")
-resultats = pd.read_csv(PATH_TO_DATASETS + DATASET_TEST + specialite + "_res.csv")
+    try : 
+        numsPMU = x_test[["numPmu0", "numPmu01"]]
+        x_test=x_test.drop(["numPmu0", "numPmu01"],axis=1)
+    except : 
+        numsPMU = x_test[["numPmu", "numPmu.1"]]
+        numsPMU = numsPMU.rename(columns={"numPmu": "numPmu0", "numPmu.1": "numPmu01"})
+    print("Applying model")
+    resultats = pd.read_csv(PATH + directory_encode + '/Y_test.csv')
+    return resultats,x_test,model,numsPMU
 
-def predict(races):
+def predict(races,model,model_choice):
+    
+    print("Predicting...") 
+
     if model_choice == "xgboost":
         dtest = xgb.DMatrix(races)
         return model.predict(dtest)
@@ -63,8 +64,6 @@ def predict(races):
     else:
         return model.predict_proba(races)[:, 1]
 
-
-print("calculating...")
 
 def final_res(arrives,nb_participants,non_partants):
     res=[0 for _ in range(nb_participants)]  
@@ -99,8 +98,9 @@ def get_place_couple_trio(id_course,nb_participants,type_paris='SIMPLE_PLACE'):
                                 res_np[int(ic)-1]=paris["dividendePourUnEuro"]/100
                             found_np = True
                     except: 
-                        print(id_course)
-                        print("could not compute NP") 
+                        pass
+                        # print(id_course)
+                        # print("could not compute NP") 
                     try :
                         if paris["libelle"][-4] != "1":
                             combinaison=paris["combinaison"].split("-")
@@ -109,12 +109,13 @@ def get_place_couple_trio(id_course,nb_participants,type_paris='SIMPLE_PLACE'):
                                 res_simple_place[int(ic)-1]=paris["dividendePourUnEuro"]/100
                             found=True
                     except : 
-                        print(id_course)
-                        print("could not compute Classic") 
+                        pass
+                        # print(id_course)
+                        # print("could not compute Classic") 
  
     except:
-        print(id_course)
-        print('file_not_found')
+        # print(id_course)
+        # print('file_not_found')
         res_simple_place = [-1 for _ in range(nb_participants)] 
         res_simple_place =  [-1 for _ in range(nb_participants)] 
 
@@ -165,10 +166,13 @@ def generate_matrices(probas,results,numsPMU):
         non_partants=results["non_partants"].iloc[c]
         ids=[results["idCourse"].iloc[c] for _ in range(nb_participants)] 
         ids_course=ids_course+ids
-        matrice=np.ones((nb_chevaux_fantomes, nb_chevaux_fantomes), dtype=float)
-        #print("nb participants : "+str(nb_participants))
+        nb_c= max(nb_chevaux_fantomes,nb_participants)
+        matrice=np.ones((nb_c, nb_c), dtype=float)
+        # print(results["idCourse"].iloc[c])
+        # print("nb participants : "+str(nb_participants))
+        # print("nb participants : "+str(nb_c))
         for i in range(nb_participants):
-            for j in range (nb_chevaux_fantomes):
+            for j in range (nb_c):
                 if i<nb_participants:
                     ch1=numsPMU["numPmu0"].iloc[k]-1
                 else : 
@@ -242,62 +246,54 @@ def plotProbas(pred):
     plt.hist(winer_proba, bins=[i for i in range(100)])
     plt.show()
 
+def process_classifier(model_choice,directory_encode,model_extension,display=False):
+    resultats,x_test,model,numsPMU = load_model_and_data(directory_encode,model_choice,model_extension)
+    lines = [0]
+    lines_res = [0]
+    for i in range(len(resultats)):
+        lines[-1]+= resultats["nbParticipants"].iloc[i]*nb_chevaux_fantomes
+        lines_res[-1]+=1
+        if lines_res[-1] > 200 :
+            lines.append(0)
+            lines_res.append(0)
 
-lines = [0]
-lines_res = [0]
-for i in range(len(resultats)):
-    lines[-1]+= resultats["nbParticipants"].iloc[i]*nb_chevaux_fantomes
-    lines_res[-1]+=1
-    if lines_res[-1] > 200 :
-        lines.append(0)
-        lines_res.append(0)
-
-probs = []
-res,ids_courses,numeros_PMU,cotes_prealables,e_cotes_prealables,cotes,cotes_non_partants,probs = [],[],[],[],[],np.array([[] for _ in CATEGORIES]),np.array([[] for _ in CATEGORIES]),[]
-for n,r in zip(lines,lines_res) :
-    partition = x_test.iloc[:n]
-    x_test = x_test.iloc[n:]
-    num_partition = numsPMU.iloc[:n]
-    numsPMU = numsPMU.iloc[n:]
-    partition_resultats = resultats.iloc[:r]
-    resultats = resultats.iloc[r:]
-    
-    probas = predict(partition)
-    matrices_2,part_res,part_ids_courses,part_numeros_PMU,part_cotes,part_cotes_non_partants,cotes_prealables_part,e_cotes_prealables_part=generate_matrices(probas,partition_resultats,num_partition)
-    res = res + part_res
-    ids_courses = ids_courses + part_ids_courses
-    numeros_PMU = numeros_PMU + part_numeros_PMU
-    cotes_prealables = cotes_prealables + cotes_prealables_part
-    e_cotes_prealables = e_cotes_prealables + e_cotes_prealables_part
-    cotes = np.hstack((cotes, part_cotes))
-    cotes_non_partants = np.hstack((cotes_non_partants, part_cotes_non_partants))
-    print("calculating final probas")
-    for mat in matrices_2:
-        for prob in normalize_probas(mat):  
-            probs.append(prob)
-
-
-# cotes=[]
-# for index, row in resultats.iterrows():
-#     cote=eval(row.iloc[3])
-#     cotes=cotes+cote
-# probs = [1 / value if value > 0 else 1/10000 for value in cotes]
-
-final = pd.DataFrame(np.hstack((cotes.T,cotes_non_partants.T)), columns=CATEGORIES+[categorie+'_NP' for categorie in CATEGORIES])
-final["PROBAS"] = probs
-final["IDS_COURSES"] = ids_courses
-final["RES"] = res
-final["NUM_PMU"] = numeros_PMU
-final["COTES_PROBABLES"] = cotes_prealables
-final["E_COTES_PROBABLES"] = e_cotes_prealables
-
-
-final.to_csv(PATH + directory_encode + '/resultats_'+model_choice+'_borda_norm'+model_extension+'.csv',index=False)
+    probs = []
+    res,ids_courses,numeros_PMU,cotes_prealables,e_cotes_prealables,cotes,cotes_non_partants,probs = [],[],[],[],[],np.array([[] for _ in CATEGORIES]),np.array([[] for _ in CATEGORIES]),[]
+    for n,r in zip(lines,lines_res) :
+        partition = x_test.iloc[:n]
+        x_test = x_test.iloc[n:]
+        num_partition = numsPMU.iloc[:n]
+        numsPMU = numsPMU.iloc[n:]
+        partition_resultats = resultats.iloc[:r]
+        resultats = resultats.iloc[r:]
         
-display_prob(probs,res)  
-plotProbas(probs)
+        probas = predict(partition,model,model_choice)
+        matrices_2,part_res,part_ids_courses,part_numeros_PMU,part_cotes,part_cotes_non_partants,cotes_prealables_part,e_cotes_prealables_part=generate_matrices(probas,partition_resultats,num_partition)
+        res = res + part_res
+        ids_courses = ids_courses + part_ids_courses
+        numeros_PMU = numeros_PMU + part_numeros_PMU
+        cotes_prealables = cotes_prealables + cotes_prealables_part
+        e_cotes_prealables = e_cotes_prealables + e_cotes_prealables_part
+        cotes = np.hstack((cotes, part_cotes))
+        cotes_non_partants = np.hstack((cotes_non_partants, part_cotes_non_partants))
+        print("calculating final probas")
+        for mat in matrices_2:
+            for prob in normalize_probas(mat):  
+                probs.append(prob)
 
-# print("logloss ")
-# print(sklearn.metrics.log_loss(resultats, probs)) 
-# RocCurveDisplay.from_predictions(resultats, probs)
-# plt.show()
+
+    final = pd.DataFrame(np.hstack((cotes.T,cotes_non_partants.T)), columns=CATEGORIES+[categorie+'_NP' for categorie in CATEGORIES])
+    final["PROBAS"] = probs
+    final["IDS_COURSES"] = ids_courses
+    final["RES"] = res
+    final["NUM_PMU"] = numeros_PMU
+    final["COTES_PROBABLES"] = cotes_prealables
+    final["E_COTES_PROBABLES"] = e_cotes_prealables
+
+
+    final.to_csv(PATH + directory_encode + '/resultats/'+model_choice+'_borda_norm'+model_extension+'.csv',index=False)
+    if display :     
+        display_prob(probs,res)  
+        plotProbas(probs)
+
+# process_classifier(model_choice,directory_encode,model_extension,display=True)

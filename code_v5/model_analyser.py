@@ -12,7 +12,7 @@ recalc_prob = False
 lgbm=True
 xgboost=False
 model_choice = "lightgbm"  # Options: "xgboost", "randomForest", "lightgbm","linregressor"
-model_name = "lgbm_model_2020_2023_reduced_05_512_07_3000.dat"
+model_name = "lgbm_model_2021_2023_attele_pere_mere.dat"
 
 if xgboost:
     # Load the XGBoost model

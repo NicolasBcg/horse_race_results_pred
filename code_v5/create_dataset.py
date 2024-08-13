@@ -8,7 +8,25 @@ import random
 
 random.seed(42)
 NB_FANTOMES=20
-FILE_FANTOME="fantomes_milieu_2022"
+FILE_FANTOME="milieu_2022_all"
+
+with open(PATH_TO_DATASETS+"jockeys.json", 'r') as f:
+    resultats_jockeys = json.load(f) 
+jockeys=resultats_jockeys.keys()
+with open(PATH_TO_DATASETS+"eleveurs.json", 'r') as f:
+    resultats_eleveurs = json.load(f) 
+eleveurs=resultats_eleveurs.keys()
+with open(PATH_TO_DATASETS+"proprietaires.json", 'r') as f:
+    resultats_proprietaires = json.load(f) 
+proprietaires=resultats_proprietaires.keys()
+with open(PATH_TO_DATASETS+"FANTOMES_"+FILE_FANTOME+".json", 'r') as f:
+    fantomes = json.load(f) 
+with open(PATH_TO_DATASETS+"horse_parents.json", 'r') as f:
+    parents = json.load(f) 
+peres=parents["fathers"]
+meres=parents["mothers"]
+parents={}
+
 FEATURES_REUNION = [
     ["dateReunion"],
     ["nature","UNKNOWN"],
@@ -69,12 +87,12 @@ FEATURES_JOCKEY = [
 ]
 NB_FEATURES_ELEVEUR=6
 FEATURES_ELEVEUR = [
-    # ["eleveur_courses_m-1",0],
-    # ["eleveur_premier_m-1",0],
-    # ["eleveur_second_m-1",0],
-    # ["eleveur_troisieme_m-1",0],
-    # ["eleveur_non_arrive_m-1",0],
-    # ["eleveur_dernier_m-1",0],
+    ["eleveur_courses_m-6",0],
+    ["eleveur_premier_m-6",0],
+    ["eleveur_second_m-6",0],
+    ["eleveur_troisieme_m-6",0],
+    ["eleveur_non_arrive_m-6",0],
+    ["eleveur_dernier_m-6",0],
     # ["eleveur_courses_m-6-18",0],
     # ["eleveur_premier_m-6-18",0],
     # ["eleveur_second_m-6-18",0],
@@ -90,12 +108,12 @@ FEATURES_ELEVEUR = [
 ]
 NB_FEATURES_PROPRIETAIRE=6
 FEATURES_PROPRIETAIRE = [
-    # ["proprietaire_courses_m-1",0],
-    # ["proprietaire_premier_m-1",0],
-    # ["proprietaire_second_m-1",0],
-    # ["proprietaire_troisieme_m-1",0],
-    # ["proprietaire_non_arrive_m-1",0],
-    # ["proprietaire_dernier_m-1",0],
+    ["proprietaire_courses_m-6",0],
+    ["proprietaire_premier_m-6",0],
+    ["proprietaire_second_m-6",0],
+    ["proprietaire_troisieme_m-6",0],
+    ["proprietaire_non_arrive_m-6",0],
+    ["proprietaire_dernier_m-6",0],
     # ["proprietaire_courses_m-2-3",0],
     # ["proprietaire_premier_m-2-3",0],
     # ["proprietaire_second_m-2-3",0],
@@ -227,19 +245,62 @@ FEATURES_CHEVAL_TROT_ATTELE=[
     # ["eleveur","UNKNOWN"],
     # ["driver","UNKNOWN"]
 ]
+FEATURES_CHEVAL_PLAT=[
+    ["numPmu"],
+    ["age",None],
+    ["sexe","UNKNOWN"],
+    ["race","UNKNOWN"],
+    ["oeilleres","UNKNOWN"],
+    
+    ["deferre","UNKNOWN"],
+    ["driverChange",None],
+    ["indicateurInedit","UNKNOWN"],
+    ["nombreCourses",-1],
+    ["nombreVictoires",-1],
+    ["nombrePlaces",-1],
+    ["nombrePlacesSecond",-1],
+    ["nombrePlacesTroisieme",-1],
+    [["gainsParticipant","gainsCarriere"],-1],
+    [["gainsParticipant","gainsVictoires"],-1],
+    [["gainsParticipant","gainsPlace"],-1],
+    [["gainsParticipant","gainsAnneeEnCours"],-1],
+    [["gainsParticipant","gainsAnneePrecedente"],-1],
+    ["jumentPleine",None],
+    ["engagement"],
+    ["supplement",-1],
+    ["handicapDistance",-1],
+    ["handicapPoids",-1],
+    ["poidsConditionMonteChange"],
+    ["avisEntraineur","UNKNOWN"],
+    ["driver_last_course",-100],
+    ["driver_last_out",-100],
+    ["horse_last_out",-100],
+    ["horse_last_elo",1400],
+    ["jockey_last_elo",1400],
+    ["horse_last_elo_v2",1400],
+    ["jockey_last_elo_v2",1400],
+    # ["proprietaire","UNKNOWN"],
+    # ["eleveur","UNKNOWN"],
+    # ["driver","UNKNOWN"]
+]
 
-with open(PATH_TO_DATASETS+"jockeys.json", 'r') as f:
-    resultats_jockeys = json.load(f) 
-jockeys=resultats_jockeys.keys()
-with open(PATH_TO_DATASETS+"eleveurs.json", 'r') as f:
-    resultats_eleveurs = json.load(f) 
-eleveurs=resultats_eleveurs.keys()
-with open(PATH_TO_DATASETS+"proprietaires.json", 'r') as f:
-    resultats_proprietaires = json.load(f) 
-proprietaires=resultats_proprietaires.keys()
-with open(PATH_TO_DATASETS+"FANTOMES_"+FILE_FANTOME+".json", 'r') as f:
-    fantomes = json.load(f) 
-
+FEATURES_CHEVAL = FEATURES_CHEVAL_PLAT
+FEATURES_PERE = [
+    ["Place1_pere"],
+    ["Place2_pere"],
+    ["Place3_pere"],
+    ["Total_course_pere"],
+    ["Gains_moyens_pere"],
+    ["Gain_Max_pere"]
+]
+FEATURES_MERE = [
+    ["Place1_mere"],
+    ["Place2_mere"],
+    ["Place3_mere"],
+    ["Total_course_mere"],
+    ["Gains_moyens_mere"],
+    ["Gain_Max_mere"]
+]
 
 def get_features_musique(musique):
     liste_resultat = []
@@ -284,7 +345,6 @@ def get_features_musique(musique):
     lr=liste_resultat[:19:2]  # Limiter la liste à 20 éléments
 
     return lr
-
 def get_Features_jockey(jockey,date):
     res=[0 for _ in range(len(FEATURES_JOCKEY))]
     if jockey in jockeys:
@@ -319,25 +379,25 @@ def get_Features_eleveur(eleveur,date):
     if eleveur in eleveurs:
         year_semester=div_time(date)
         # last_month_div=div_time(date,-1)
-        # last_month_div_1_6 = [div_time(date,-m) for m in range(1,7)]
+        last_month_div_6 = [div_time(date,-m) for m in range(6)]
         # last_month_div_6_18 = [div_time(date,-m) for m in range(7,18)]
         for key in resultats_eleveurs[eleveur].keys():
             if int(key)<int(year_semester):
                 for i in range(NB_FEATURES_ELEVEUR):
-                    res[i]+=resultats_eleveurs[eleveur][key][i]
-                # if key == last_month_div:
-                #     for i in range(NB_FEATURES_ELEVEUR):
-                #         res[i]+=resultats_eleveurs[eleveur][key][i]
+                    res[i+NB_FEATURES_ELEVEUR]+=resultats_eleveurs[eleveur][key][i]
+                if key in last_month_div_6:
+                    for i in range(NB_FEATURES_ELEVEUR):
+                        res[i]+=resultats_eleveurs[eleveur][key][i]
                 # elif key in last_month_div_6_18:
                 #     for i in range(NB_FEATURES_JOCKEY):
                 #         res[i+NB_FEATURES_ELEVEUR]+=resultats_eleveurs[eleveur][key][i]
     return res
-
 def get_FEATURES_PROPRIETAIRE(proprietaire,date):
     res=[0 for _ in range(len(FEATURES_PROPRIETAIRE))]
     if proprietaire in proprietaires:
         year_semester=div_time(date)
         # last_month_div=div_time(date,-1)
+        last_month_div_6 = [div_time(date,-m) for m in range(6)]
         # last_month_div_2_3 = [div_time(date,-2),div_time(date,-3)]
         # last_month_div_4_6 = [div_time(date,-m) for m in range(4,7)]
         # last_month_div_7_12 = [div_time(date,-m) for m in range(7,13)]
@@ -345,10 +405,10 @@ def get_FEATURES_PROPRIETAIRE(proprietaire,date):
         for key in resultats_proprietaires[proprietaire].keys():
             if int(key)<int(year_semester):
                 for i in range(NB_FEATURES_PROPRIETAIRE):
-                    res[i]+=resultats_proprietaires[proprietaire][key][i]
-                # if key == last_month_div:
-                #     for i in range(NB_FEATURES_PROPRIETAIRE):
-                #         res[i]+=resultats_proprietaires[proprietaire][key][i]
+                    res[i+NB_FEATURES_PROPRIETAIRE]+=resultats_proprietaires[proprietaire][key][i]
+                if key in last_month_div_6:
+                    for i in range(NB_FEATURES_PROPRIETAIRE):
+                        res[i]+=resultats_proprietaires[proprietaire][key][i]
                 # elif key in last_month_div_2_3:
                 #     for i in range(NB_FEATURES_PROPRIETAIRE):
                 #         res[i+NB_FEATURES_PROPRIETAIRE]+=resultats_proprietaires[proprietaire][key][i]
@@ -362,7 +422,16 @@ def get_FEATURES_PROPRIETAIRE(proprietaire,date):
                 #     for i in range(NB_FEATURES_PROPRIETAIRE):
                 #         res[i+4*NB_FEATURES_PROPRIETAIRE]+=resultats_proprietaires[proprietaire][key][i]
     return res
-
+def get_features_parents(name,parent):
+    if name == "unknown":
+        return [-1,-1,-1,-1,-1,-1]
+    elif parent == "pere" and name in peres.keys():
+        return peres[name]
+    elif parent == "mere" and name in meres.keys():
+        return meres[name]
+    else :
+        return [-1,-1,-1,-1,-1,-1]
+        
 def extract_cotes(raport):
     cotes=[0 for _ in range(raport["nbParticipants"])]
     for participant in raport["rapportsParticipant"]:
@@ -372,7 +441,9 @@ def extract_cotes(raport):
 
 def create_feature_list(training=True):
     features=[]
-    features_lists=[FEATURES_CHEVAL_TROT_ATTELE,FEATURES_JOCKEY,FEATURES_ELEVEUR,FEATURES_PROPRIETAIRE,FEATURES_MUSIQUE,FEATURES_REUNION,FEATURES_COURSE,FEATURES_CHEVAL_TROT_ATTELE,FEATURES_JOCKEY,FEATURES_ELEVEUR,FEATURES_PROPRIETAIRE,FEATURES_MUSIQUE]
+    # features_lists=[FEATURES_CHEVAL,FEATURES_JOCKEY,FEATURES_ELEVEUR,FEATURES_PROPRIETAIRE,FEATURES_MUSIQUE,FEATURES_REUNION,FEATURES_COURSE,FEATURES_CHEVAL,FEATURES_JOCKEY,FEATURES_ELEVEUR,FEATURES_PROPRIETAIRE,FEATURES_MUSIQUE]
+    features_lists=[FEATURES_CHEVAL,FEATURES_JOCKEY,FEATURES_ELEVEUR,FEATURES_PROPRIETAIRE,FEATURES_MUSIQUE,FEATURES_PERE,FEATURES_MERE,FEATURES_REUNION,FEATURES_COURSE,FEATURES_CHEVAL,FEATURES_JOCKEY,FEATURES_ELEVEUR,FEATURES_PROPRIETAIRE,FEATURES_MUSIQUE,FEATURES_PERE,FEATURES_MERE]
+
     for features_list in features_lists:
         for feature in features_list:
             if type(feature[0])==str:
@@ -428,6 +499,7 @@ def recup_infos(file_name,training=True):
         programme = json.loads(file.read())
     for reunion in programme["reunions"]:
         num_reunion = reunion['numOfficiel']
+        date_reu=reunion["dateReunion"]
         infos_reunion = extract_features(reunion,FEATURES_REUNION)
         for course in reunion['courses']:
             specialite=course["specialite"]
@@ -467,12 +539,23 @@ def recup_infos(file_name,training=True):
                         if "musique" in participant.keys():
                             musique=participant["musique"]
                         else:
-                            musique=""   
-                        chevaux.append(extract_features(participant,FEATURES_CHEVAL_TROT_ATTELE)+get_Features_jockey(jockey,date)+get_Features_eleveur(eleveur,date)+get_FEATURES_PROPRIETAIRE(proprietaire,date)+get_features_musique(musique))
-                    data_by_race.append(infos_reunion+info_course+[chevaux]+[ordreArrivee]+[idCourse]+[time_start]+[non_partants]+[specialite])
+                            musique=""  
+                        if "nomMere" in participant.keys():
+                            mother_name = participant["nomMere"]
+                        else:
+                            mother_name = "unknown"
+                        if "nomPere" in participant.keys():   
+                            father_name= participant["nomPere"]
+                        else: 
+                            father_name = "unknown"
+                        # chevaux.append(extract_features(participant,FEATURES_CHEVAL)+get_Features_jockey(jockey,date)+get_Features_eleveur(eleveur,date)+get_FEATURES_PROPRIETAIRE(proprietaire,date)+get_features_musique(musique))
+                        chevaux.append(extract_features(participant,FEATURES_CHEVAL)+get_Features_jockey(jockey,date)+get_Features_eleveur(eleveur,date)+get_FEATURES_PROPRIETAIRE(proprietaire,date)+get_features_musique(musique)+get_features_parents(father_name,'pere')+get_features_parents(mother_name,'mere'))
+
+                    data_by_race.append(infos_reunion+info_course+[chevaux]+[ordreArrivee]+[idCourse]+[time_start]+[non_partants]+[specialite]+[date_reu])
     return data_by_race
 
 def generate_rows_from_race(race,training=True,select_specialite="all"):
+    date_reunion=race.pop()
     specialite=race.pop()
     non_partants = race.pop()
     time_course= race.pop()
@@ -503,11 +586,11 @@ def generate_rows_from_race(race,training=True,select_specialite="all"):
                         cotes = extract_cotes(json.load(f))
                     with open(PATH_TO_CACHE+'E_simple_rapports_prealable/'+idCourse+'.json', 'r') as f:
                         e_cotes = extract_cotes(json.load(f))
-                    course = [resultats]+[idCourse]+[nb_participants]+[cotes]+[time_course]+[non_partants]+[e_cotes]
+                    course = [resultats]+[idCourse]+[nb_participants]+[cotes]+[time_course]+[non_partants]+[e_cotes]+[date_reunion]
 
                       
                 except:
-                    course = [resultats]+[idCourse]+[nb_participants]+[[-1 for _ in range(nb_participants)]]+[time_course]+[non_partants]+[[-1 for _ in range(nb_participants)]]
+                    course = [resultats]+[idCourse]+[nb_participants]+[[-1 for _ in range(nb_participants)]]+[time_course]+[non_partants]+[[-1 for _ in range(nb_participants)]]+[date_reunion]
             else : 
                 course = []
 
@@ -538,6 +621,7 @@ def generate_dataset(date1,date2,dname,training=True,select_specialite="all"):
     courses_trot=[]
     courses_plat=[]
     ftrs=create_feature_list(training=training)
+    print(ftrs)
     df = pd.DataFrame(dataset_attele, columns =ftrs)
     if select_specialite=="all" or select_specialite=="attele":
         df.to_csv(PATH_TO_CACHE+"datasets\\"+dname+"_attele.csv", mode='w', index=False, header=True)
@@ -584,9 +668,9 @@ def generate_dataset(date1,date2,dname,training=True,select_specialite="all"):
         dfplat.to_csv(PATH_TO_CACHE+"datasets\\"+dname+"_plat.csv", mode='a', index=False, header=False)
     if not training:
         if select_specialite=="all" or select_specialite=="attele":
-            pd.DataFrame(courses_trot, columns =["resultats","idCourse","nbParticipants","cotes","heure_depart","non_partants","e_cotes"]).to_csv(PATH_TO_CACHE+"datasets\\"+dname+"_attele_res.csv", mode='w', index=False, header=True)
+            pd.DataFrame(courses_trot, columns =["resultats","idCourse","nbParticipants","cotes","heure_depart","non_partants","e_cotes","dateReunion"]).to_csv(PATH_TO_CACHE+"datasets\\"+dname+"_attele_res.csv", mode='w', index=False, header=True)
         if select_specialite=="all" or select_specialite=="plat":
-            pd.DataFrame(courses_plat, columns =["resultats","idCourse","nbParticipants","cotes","heure_depart","non_partants","e_cotes"]).to_csv(PATH_TO_CACHE+"datasets\\"+dname+"_plat_res.csv", mode='w', index=False, header=True)
+            pd.DataFrame(courses_plat, columns =["resultats","idCourse","nbParticipants","cotes","heure_depart","non_partants","e_cotes","dateReunion"]).to_csv(PATH_TO_CACHE+"datasets\\"+dname+"_plat_res.csv", mode='w', index=False, header=True)
 
 def generate_fantomes(date1,date2,dname,select_specialite="all"):
     #init files and df
@@ -622,6 +706,6 @@ def generate_fantomes(date1,date2,dname,select_specialite="all"):
     fantomes={"PLAT" : dataset_plat,"TROT_ATTELE" : dataset_attele}
     with open(PATH_TO_DATASETS+"FANTOMES_"+dname+".json", "w") as json_file:
         json.dump(fantomes, json_file)
-generate_fantomes("1/4/2022","1/8/2022","fantomes_milieu_2022",select_specialite="all")
+# generate_fantomes("1/4/2022","1/8/2022","milieu_2022_all",select_specialite="attele")
 
     

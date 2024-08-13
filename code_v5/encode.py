@@ -31,10 +31,10 @@ def encode_primary(filename,date1,date2,DATASET,NORMALIZE = False):
     date2=time.mktime(datetime.datetime.strptime(date2,"%d/%m/%Y").timetuple())
     df = df[df.dateReunion>date1*1000]
     df = df[df.dateReunion<date2*1000]
-    if df['valeurMesure'].apply(lambda x: isinstance(x, str)).any():
-        df['valeurMesure']=df['valeurMesure'].str.replace(',', '.').astype(float)
-    else :
-        df['valeurMesure']=df['valeurMesure'].astype(float)
+    # if df['valeurMesure'].apply(lambda x: isinstance(x, str)).any():
+    #     df['valeurMesure']=df['valeurMesure'].str.replace(',', '.').astype(float)
+    # else :
+    #     df['valeurMesure']=df['valeurMesure'].astype(float)
     df['dateReunion'] = pd.to_datetime(df['dateReunion']/1000, unit='s')
     df['day'] = df['dateReunion'].dt.day
     df['month'] = df['dateReunion'].dt.month
@@ -85,7 +85,8 @@ def encode_primary(filename,date1,date2,DATASET,NORMALIZE = False):
         df.drop([col], axis=1, inplace=True)
     print(df.shape)
     os.makedirs(PATH+filename)
-    os.makedirs(PATH+filename+"/encoders")        
+    os.makedirs(PATH+filename+"/encoders")
+    os.makedirs(PATH+filename+"/resultats")         
     if NORMALIZE:
     # Normalize the data
         scaler = StandardScaler()
@@ -103,16 +104,16 @@ def encode_primary(filename,date1,date2,DATASET,NORMALIZE = False):
     
 def encode_new_data(filename,date1,date2,DATASET,training=True,NORMALIZE = False):
     print("extracting data to encode")
-    df=pd.read_csv(PATH_TO_DATASETS+DATASET)
+    df=pd.read_csv(PATH_TO_DATASETS+DATASET+".csv")
     print("spliting data to encode")
     date1=time.mktime(datetime.datetime.strptime(date1,"%d/%m/%Y").timetuple())
     date2=time.mktime(datetime.datetime.strptime(date2,"%d/%m/%Y").timetuple())
     df = df[df.dateReunion>=date1*1000]
     df = df[df.dateReunion<date2*1000]
-    if df['valeurMesure'].apply(lambda x: isinstance(x, str)).any(): 
-        df['valeurMesure']=df['valeurMesure'].str.replace(',', '.').astype(float)
-    else :
-        df['valeurMesure']=df['valeurMesure'].astype(float)
+    # if df['valeurMesure'].apply(lambda x: isinstance(x, str)).any(): 
+    #     df['valeurMesure']=df['valeurMesure'].str.replace(',', '.').astype(float)
+    # else :
+    #     df['valeurMesure']=df['valeurMesure'].astype(float)
     df['dateReunion'] = pd.to_datetime(df['dateReunion']/1000, unit='s')
     df['day'] = df['dateReunion'].dt.day
     df['month'] = df['dateReunion'].dt.month
@@ -123,8 +124,10 @@ def encode_new_data(filename,date1,date2,DATASET,training=True,NORMALIZE = False
         df=df.drop(["resultats"],axis=1)
     df=df.drop(["idCourse"],axis=1)
     numsPMU = df[["numPmu", "numPmu.1"]]
-
+    df = pd.concat([df, numsPMU["numPmu"].rename("numPmu0"),numsPMU["numPmu.1"].rename("numPmu01")], axis=1)
     print(df.shape)
+    print("concatenated")
+
     if training:
         print(df_y.shape) 
 
@@ -168,12 +171,18 @@ def encode_new_data(filename,date1,date2,DATASET,training=True,NORMALIZE = False
     print(df.shape)
     if training:
         print(df_y.shape)
-        df.to_csv(PATH+filename+"/X_test.csv",index=False)
-        df_y.to_csv(PATH+filename+"/Y_test.csv",index=False)
+        df.to_csv(PATH+filename+"/X_valid.csv",index=False)
+        df_y.to_csv(PATH+filename+"/Y_valid.csv",index=False)
     else : 
-        df = pd.concat([df, numsPMU["numPmu"].rename("numPmu0"),numsPMU["numPmu.1"].rename("numPmu01")], axis=1)
-        print("concatenated")
-        df.to_csv(PATH+filename+"/X_test_2.csv",index=False)
+
+        df.to_csv(PATH+filename+"/X_test.csv",index=False)
+        print("load results")
+        resultats = pd.read_csv(PATH_TO_DATASETS + DATASET + "_res.csv")
+        print("split results")
+        resultats = resultats[resultats.dateReunion>=date1*1000]
+        resultats = resultats[resultats.dateReunion<date2*1000]
+        print("save results")
+        resultats.to_csv(PATH+filename+"/Y_test.csv",index=False)
 
 # encode_new_data(directory_encode,"1/1/2023","1/1/2024",DATASET_TEST+"_attele.csv",training=False)
 # filename=directory_encode

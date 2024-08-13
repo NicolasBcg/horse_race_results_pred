@@ -3,7 +3,7 @@ import numpy as np
 import pickle
 from path import *
 import matplotlib.pyplot as plt
-
+import os 
 
 
 # 0 : k
@@ -139,7 +139,7 @@ def bet_on_winner(courses,seuilProba=0.13, bet_type="max", diff_limit=0, diff_pr
             non_partant+=1
         elif c1==-1:
             u+=1
-        elif p1-p2<seuilProba and diff1 >= diff_limit and ratio1 >= diff_prop_limit:#p1-p2>seuilProba-(nbParticipants/1000)+0.01 and p1*c1>seuilEV and nbParticipants>=12: # p1-p2>seuilProba-(nbParticipants/800)+0.0205 and p1*c1>seuilEV:
+        elif p1-p2<seuilProba and diff1 >= diff_limit and ratio1 >= diff_prop_limit :#max(course[0][9],course[0][10]) p1-p2>seuilProba-(nbParticipants/1000)+0.01 and p1*c1>seuilEV and nbParticipants>=12: # p1-p2>seuilProba-(nbParticipants/800)+0.0205 and p1*c1>seuilEV:
 
             paris.append(paris[-1] + c1 - 1 if r1 == 1  else paris[-1] - 1)
             paris_by_months[month].append(paris_by_months[month][-1] + c1 - 1 if r1 == 1 else paris_by_months[month][-1] - 1)
@@ -283,9 +283,11 @@ def calcDrawbacksPlus(paris):
              max=paris[i]
     return drawbacks
 
-def merge_proba(directory_encode, files):
+def merge_proba(directory_encode, files = []):
     dfs = []
-    paths = [PATH + directory_encode + file for file in files]
+    if files == []:
+        files = files=os.listdir(PATH + directory_encode + '/resultats/')
+    paths = [PATH + directory_encode + '/resultats/' + file for file in files]
     for path in paths: 
         dfs.append(pd.read_csv(path))
     # Concaténez les colonnes 'PROBAS' des DataFrames
@@ -332,33 +334,65 @@ def test_paris(courses,resultats,types_paris=[]):
                     allParis.append(paris)
 
 
-df=pd.read_csv(PATH + directory_encode + '/resultats_xgboost_borda_norm_03_9_07_5000.csv')
-files = ['/resultats_lightgbm_borda_norm_04_512_07_4000.csv','/resultats_lightgbm_borda_norm_05_370_08_2000.csv','/resultats_lightgbm_borda_norm_05_1024_09_1000.csv','/resultats_xgboost_borda_norm_05_9_09_1000.csv','/resultats_xgboost_borda_norm_05_10_09_2000.csv','/resultats_lightgbm_borda_norm_02_1024_06_8000.csv','/resultats_xgboost_borda_norm_03_9_07_5000.csv']
+
+
+
+# directory_encode = "2021_2023_attele_all"
+df=pd.read_csv(PATH + directory_encode + '/resultats/lightgbm_borda_norm_05_512_07_3000.csv')
 courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_GAGNANT"],df["E_SIMPLE_GAGNANT"],df["RES"],df["SIMPLE_GAGNANT_NP"],df["E_SIMPLE_GAGNANT_NP"],df["COTES_PROBABLES"],df["E_COTES_PROBABLES"])
 test_paris(courses,df["RES"],[0])
+# print("\n PLACE \n")
+# courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_PLACE"],df["E_SIMPLE_PLACE"],df["RES"],df["SIMPLE_GAGNANT_NP"],df["E_SIMPLE_GAGNANT_NP"],df["COTES_PROBABLES"],df["E_COTES_PROBABLES"])
+# test_paris(courses,df["RES"],[1])
 
+# print("\n COUPLE \n")
+# courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["COUPLE_GAGNANT"],df["E_COUPLE_GAGNANT"],df["RES"],df["COUPLE_GAGNANT_NP"],df["E_COUPLE_GAGNANT_NP"],df["COTES_PROBABLES"],df["E_COTES_PROBABLES"])
+# test_paris(courses,df["RES"],[2])
+# print("\n TRIO \n")
+# courses= splitCoursesv2(df["PROBAS"],df["IDS_COURSES"],df["NUM_PMU"],df["TRIO"],df["E_TRIO"],df["RES"],df["TRIO_NP"],df["TRIO_NP"],df["COTES_PROBABLES"],df["E_COTES_PROBABLES"])
+# test_paris(courses,df["RES"],[3])
 
 print("\n Other 1 \n")
-probas = merge_proba(directory_encode,files)
+
+
+probas = merge_proba(directory_encode)
 courses= splitCoursesv2(probas,df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_GAGNANT"],df["E_SIMPLE_GAGNANT"],df["RES"],df["SIMPLE_GAGNANT_NP"],df["E_SIMPLE_GAGNANT_NP"],df["COTES_PROBABLES"],df["E_COTES_PROBABLES"])
 test_paris(courses,df["RES"],[0])
 
+# print("\n PLACE \n")
+# courses= splitCoursesv2(probas,df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_PLACE"],df["E_SIMPLE_PLACE"],df["RES"],df["SIMPLE_GAGNANT_NP"],df["E_SIMPLE_GAGNANT_NP"],df["COTES_PROBABLES"],df["E_COTES_PROBABLES"])
+# test_paris(courses,df["RES"],[1])
 
-print("\n Other 2  \n")
-files = ['/resultats_xgboost_borda_norm_05_9_09_1000.csv','/resultats_lightgbm_borda_norm_05_1024_09_1000.csv']
-probas = merge_proba(directory_encode,files)
-courses= splitCoursesv2(probas,df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_GAGNANT"],df["E_SIMPLE_GAGNANT"],df["RES"],df["SIMPLE_GAGNANT_NP"],df["E_SIMPLE_GAGNANT_NP"],df["COTES_PROBABLES"],df["E_COTES_PROBABLES"])
-test_paris(courses,df["RES"],[0])
-
-
-print("\n Other 3  \n")
-files = ['/resultats_xgboost_borda_norm_05_9_09_1000.csv','/resultats_xgboost_borda_norm_03_9_07_5000.csv','/resultats_xgboost_borda_norm_03_9_07_5000.csv']
-probas = merge_proba(directory_encode,files)
-courses= splitCoursesv2(probas,df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_GAGNANT"],df["E_SIMPLE_GAGNANT"],df["RES"],df["SIMPLE_GAGNANT_NP"],df["E_SIMPLE_GAGNANT_NP"],df["COTES_PROBABLES"],df["E_COTES_PROBABLES"])
-test_paris(courses,df["RES"],[0])
+# print("\n COUPLE \n")
+# courses= splitCoursesv2(probas,df["IDS_COURSES"],df["NUM_PMU"],df["COUPLE_GAGNANT"],df["E_COUPLE_GAGNANT"],df["RES"],df["COUPLE_GAGNANT_NP"],df["E_COUPLE_GAGNANT_NP"],df["COTES_PROBABLES"],df["E_COTES_PROBABLES"])
+# test_paris(courses,df["RES"],[2])
+# print("\n TRIO \n")
+# courses= splitCoursesv2(probas,df["IDS_COURSES"],df["NUM_PMU"],df["TRIO"],df["E_TRIO"],df["RES"],df["TRIO_NP"],df["TRIO_NP"],df["COTES_PROBABLES"],df["E_COTES_PROBABLES"])
+# test_paris(courses,df["RES"],[3])
 
 
 
+
+
+
+# print("\n Other 1 \n")
+# probas = merge_proba(directory_encode,files)
+# courses= splitCoursesv2(probas,df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_GAGNANT"],df["E_SIMPLE_GAGNANT"],df["RES"],df["SIMPLE_GAGNANT_NP"],df["E_SIMPLE_GAGNANT_NP"],df["COTES_PROBABLES"],df["E_COTES_PROBABLES"])
+# test_paris(courses,df["RES"],[0])
+
+
+# print("\n Other 2  \n")
+# files = ['/resultats_xgboost_borda_norm_05_9_09_1000.csv','/resultats_lightgbm_borda_norm_05_1024_09_1000.csv']
+# probas = merge_proba(directory_encode,files)
+# courses= splitCoursesv2(probas,df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_GAGNANT"],df["E_SIMPLE_GAGNANT"],df["RES"],df["SIMPLE_GAGNANT_NP"],df["E_SIMPLE_GAGNANT_NP"],df["COTES_PROBABLES"],df["E_COTES_PROBABLES"])
+# test_paris(courses,df["RES"],[0])
+
+
+# print("\n Other 3  \n")
+# files = ['/resultats_xgboost_borda_norm_05_9_09_1000.csv','/resultats_xgboost_borda_norm_03_9_07_5000.csv','/resultats_xgboost_borda_norm_03_9_07_5000.csv']
+# probas = merge_proba(directory_encode,files)
+# courses= splitCoursesv2(probas,df["IDS_COURSES"],df["NUM_PMU"],df["SIMPLE_GAGNANT"],df["E_SIMPLE_GAGNANT"],df["RES"],df["SIMPLE_GAGNANT_NP"],df["E_SIMPLE_GAGNANT_NP"],df["COTES_PROBABLES"],df["E_COTES_PROBABLES"])
+# test_paris(courses,df["RES"],[0])
 
 
 
