@@ -19,10 +19,10 @@ from path import *
 # prefix = '_03_9_07_5000'
 # num_boost_round = 5000
 
-def train_xgb(directory_encode,params,num_boost_round,prefix,display_probs = False):
+def train_xgb(directory_encode,params,num_boost_round,sufix,display_probs = False):
     print("extracting data")
-    x_train = pd.read_csv(PATH+directory_encode+'/X_train.csv')
-    y_train = pd.read_csv(PATH+directory_encode+'/Y_train.csv').to_numpy().astype(np.float32)
+    x_train = pd.read_csv(PATH+directory_encode+'/encoded_datas/X_train.csv')
+    y_train = pd.read_csv(PATH+directory_encode+'/encoded_datas/Y_train.csv').to_numpy().astype(np.float32)
     y_train = y_train.reshape(-1)  # Reshape to a 1D array
 
     print("extracting data done")
@@ -39,7 +39,7 @@ def train_xgb(directory_encode,params,num_boost_round,prefix,display_probs = Fal
     print("training end "+str(time.time()-start))
 
     # Save the trained model
-    joblib.dump(model, PATH + "xgboost_model_" + directory_encode + prefix + ".dat")
+    joblib.dump(model, PATH + directory_encode +"/"+directory_encode +"-xgboost-"  + sufix+".dat")
 
 # Load the trained model
 # model = joblib.load(PATH + "xgboost_model_" + directory_encode + ".dat")
@@ -48,8 +48,8 @@ def train_xgb(directory_encode,params,num_boost_round,prefix,display_probs = Fal
     if display_probs:
         # Extract test data
         print("extracting test data ")
-        x_test = pd.read_csv(PATH+directory_encode+'/X_valid.csv')
-        y_test = pd.read_csv(PATH+directory_encode+'/Y_valid.csv').to_numpy().astype(np.float32)
+        x_test = pd.read_csv(PATH+directory_encode+'/encoded_datas/X_valid.csv')
+        y_test = pd.read_csv(PATH+directory_encode+'/encoded_datas/Y_valid.csv').to_numpy().astype(np.float32)
         y_test = y_test.reshape(-1)  # Reshape to a 1D array
         print("predicting ")
 

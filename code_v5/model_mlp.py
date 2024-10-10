@@ -10,8 +10,8 @@ from sklearn.preprocessing import StandardScaler
 
 # Load data
 print("Extracting data")
-x_train = pd.read_csv(PATH + directory_encode + '/X_train.csv')
-y_train = pd.read_csv(PATH + directory_encode + '/Y_train.csv').to_numpy().astype(np.float32).reshape(-1)
+x_train = pd.read_csv(PATH + directory_encode + '/encoded_datas/X_train.csv')
+y_train = pd.read_csv(PATH + directory_encode + '/encoded_datas/Y_train.csv').to_numpy().astype(np.float32).reshape(-1)
 print("Loaded MLP")
 # Check for missing values
 print("Checking for missing values in training data:")

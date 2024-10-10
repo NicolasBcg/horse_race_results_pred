@@ -9,14 +9,13 @@ import pandas as pd
 from path import *
 import sklearn.metrics as metrics
 recalc_prob = True
-lgbm=True
-xgboost=False
-model_choice = "lightgbm"  # Options: "xgboost", "randomForest", "lightgbm","linregressor"
-model_name = "lgbm_model_2021_2023_attele_bis_07_350_07_2000.dat"
-
+lgbm=False
+xgboost=True
+model_choice = "xgboost"  # Options: "xgboost", "randomForest", "lightgbm","linregressor"
+model_name = "2019_2023_attele-xgboost-_02_12_06_8000"
+# Load the XGBoost model
+model = joblib.load(PATH + directory_encode +"/"+model_name+ ".dat")
 if xgboost:
-    # Load the XGBoost model
-    model = joblib.load(PATH + model_name)
 
     # Get feature importance (assuming model is a Booster object)
     importance = model.get_score(importance_type='gain')#gain cover weight
@@ -25,7 +24,7 @@ if xgboost:
     importance = sorted(importance.items(), key=lambda x: x[1], reverse=True)
     print(zip(*importance))
     # Separate the feature names and their scores
-    features, scores = zip(*importance[-100:-50])
+    features, scores = zip(*importance[:50])
 
     # Plot the feature importance
     plt.figure(figsize=(12, 8))
@@ -61,7 +60,7 @@ if xgboost:
     importance = sorted(importance.items(), key=lambda x: x[1], reverse=True)
     print(zip(*importance))
     # Separate the feature names and their scores
-    features, scores = zip(*importance[-100:-50])
+    features, scores = zip(*importance[:50])
 
     plt.subplot(1, 2, 2)
     plt.barh(features, scores)
@@ -75,9 +74,6 @@ if xgboost:
 
 if lgbm:
 
-    # Load the LightGBM model
-    model = joblib.load(PATH + model_name)
-
     # Get feature importance (gain)
     importance = model.feature_importance(importance_type='gain')
 
@@ -88,7 +84,7 @@ if lgbm:
     importance_tuples = sorted(zip(feature_names, importance), key=lambda x: x[1], reverse=True)
 
     # Separate the feature names and their scores (for the middle 50 features, in this example)
-    features, scores = zip(*importance_tuples[-50:])
+    features, scores = zip(*importance_tuples[:50])
 
     # Plot the feature importance for 'gain'
     plt.figure(figsize=(12, 8))
@@ -106,7 +102,7 @@ if lgbm:
     importance_weight_tuples = sorted(zip(feature_names, importance_weight), key=lambda x: x[1], reverse=True)
 
     # Separate the feature names and their scores (top 40 features)
-    features_weight, scores_weight = zip(*importance_weight_tuples[-50:])
+    features_weight, scores_weight = zip(*importance_weight_tuples[:50])
 
     # Plot the feature importance for 'weight'
     plt.subplot(1, 2, 2)
@@ -138,8 +134,10 @@ def predict(races):
 
 if recalc_prob:
     print("extracting test data ")
-    x_test = pd.read_csv(PATH+directory_encode+'/X_valid.csv')
-    y_test = pd.read_csv(PATH+directory_encode+'/Y_valid.csv').to_numpy().astype(np.float32)
+    x_test = pd.read_csv(PATH+directory_encode+'/encoded_datas/X_valid.csv')
+    x_test=x_test.drop(["numPmu0"],axis=1)
+    x_test=x_test.drop(["numPmu01"],axis=1)
+    y_test = pd.read_csv(PATH+directory_encode+'/encoded_datas/Y_valid.csv').to_numpy().astype(np.float32)
     y_test = y_test.reshape(-1)  # Reshape to a 1D array
     print("predicting ")
 
