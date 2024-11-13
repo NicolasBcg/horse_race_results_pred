@@ -1,3 +1,6 @@
+import concurrent.futures
+from tqdm import tqdm  # barre de progression pour suivre le traitement
+
 from bs4 import BeautifulSoup
 import time
 from lxml import etree
@@ -197,11 +200,71 @@ def get_horses_res(year):
 
     with open(saving_file, 'w') as file:
             json.dump(horses_dict, file, indent=4)
-# get_horses_res(2024)
-# get_horses_res(2023)
-get_horses_res(2022)
-get_horses_res(2021)
 
+def process_file_2(f, year, horses_dict_, downloaded, failed, already_in_file, parent_already_in_file):
+    with open(PATH_TO_CACHE + "participants/" + f, 'r') as file_:
+        participants = json.load(file_)
+
+    for participant in participants["participants"]:
+        if {"nom", "age", "sexe"} <= participant.keys():  # vérification simplifiée
+            horse_name, birth_year, genre, internl_id = get_info_horse(participant, year)
+
+            # Si le cheval est déjà dans le dictionnaire, on le saute
+            if internl_id in horses_dict_["Horses"] or internl_id in horses_dict_["not_found"]:
+                already_in_file += 1
+                continue
+
+            current_horse_id = get_horse_id(horse_name, birth_year, genre)
+            if current_horse_id == "-1":
+                failed += 1
+            else:
+                parents_id = get_horse_parents(current_horse_id)
+                horses_dict_["Horses"][internl_id] = (current_horse_id, parents_id)
+
+                for parent_id in parents_id:
+                    if parent_id in horses_dict_["parents"]:
+                        parent_already_in_file += 1
+                    else:
+                        places, gains = get_horse_result(parent_id)
+                        if places != ["-1"]:
+                            horses_dict_["parents"][parent_id] = calc_KPI(places, gains)
+                            downloaded += 1
+    return downloaded, failed, already_in_file, parent_already_in_file
+
+
+def get_horses_res_2(year):
+    # Initialisation des compteurs et du dictionnaire
+    already_in_file, parent_already_in_file, downloaded, failed = 0, 0, 0, 0
+    files = get_files_to_treat(year)
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = [executor.submit(process_file_2, f, year, horses_dict, downloaded, failed, already_in_file,
+                                   parent_already_in_file) for f in files]
+
+        # Utilisation de tqdm pour suivre la progression avec des informations complémentaires
+        with tqdm(total=len(futures), desc="Traitement des fichiers") as pbar:
+            for future in concurrent.futures.as_completed(futures):
+                res = future.result()
+                downloaded += res[0]
+                failed += res[1]
+                already_in_file += res[2]
+                parent_already_in_file += res[3]
+
+                # Mise à jour de la barre de progression avec les informations de comptage
+                pbar.update(1)
+                pbar.set_postfix(downloaded=downloaded, failed=failed, already_in_file=already_in_file,
+                                 parent_in_file=parent_already_in_file)
+
+    # Sauvegarde finale
+    with open(saving_file, 'w') as file_save:
+        json.dump(horses_dict, file_save)
+    print("Final save completed.")
+
+
+# get_horses_res(2024)
+get_horses_res_2(2023)
+# get_horses_res(2022)
+# get_horses_res(2021)
 # get_horses_res(2020)
 # get_horses_res(2019)
 
