@@ -252,6 +252,7 @@ def sortHorses(horses):
 
 
 def splitCoursesv2(probs,ids_course,numeros_PMU,classique,e_paris,results,classique_np,e_paris_np,cotes_prealables,e_cotes_prealables,times_course,zeturf_cotes_prealables):
+                                                                                                                
     splited=[]
     lastId=0
     lastCourse=ids_course[0]
